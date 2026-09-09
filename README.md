@@ -30,6 +30,8 @@
 当你向助手发放链接任务时，本工具箱实质为其底层配置了一套五步组合流水线（参考指令文档 `instructions.md`）：
 
 1. **抓取 字幕 (Scraping)**: 调用脚本 `python src/dump_transcript.py <url>` 剥离得到原始口语字幕 JSON。
+   若平台侧根本没有字幕（作者未上传 CC、B 站 AI 字幕尚未生成），自动兜底 `python src/asr_transcript.py <video_id>`：
+   用 yt-dlp 只拉音频轨，再交给本地 faster-whisper（large-v3）转写，产出**与平台字幕完全同构**的 `transcript.json`，后续各步零改动。
 2. **重写 编排 (Stitching)**: AI 利用大模型能力将乱七八糟的字幕提取要义改写为 Markdown，并在关键讲解处插入 `![描述](SCREENSHOT:00:15:30)` 时间戳指令占位。
 3. **截帧 插图 (Capturing)**：在已登录浏览器中直接截取平台播放器画面（画质直接来自平台，不下载任何媒体文件）：Codex 桌面环境首选 Chrome 扩展（@Chrome）；通用脚本 `python src/capture_frames.py` 使用专用截帧配置（`.capture-profile/`，一次性登录、长期复用登录态；Chrome 136+ 禁止对默认配置远程调试，故不触碰主 Chrome），失败后才兜底 `python src/extract_frames.py`（下载视频源用 ffmpeg 抽帧，文件保留至流程结束并询问用户是否删除）。两者都会把 `book.md` 中的占位符物化为真实图片链接（原标签稿自动备份为 `book.tagged.md`）；HTML 中的截图支持点击放大浏览。
 4. **渲染 网页 (Rendering)**: 调用 `python src/post_process.py <url> <md>` 把所有占位的锚点改造成 YouTube/B站原生轻量级 `iframe` 代码，并且注入极简暗色主题，把枯燥的 `.md` 内容最终渲染为可直接在线看的富文本 `.html`。
@@ -56,7 +58,18 @@
    - `python src/dump_transcript.py <url>`（yt-dlp 网络请求；B 站需登录态时会自动从 .capture-profile 导出 cookies，期间启动无头 Chrome）
    纯本地步骤（`post_process.py`、`python -m http.server`）在沙箱内即可运行。
 
-5. **自动导出的 cookies 会泄露吗？**
+5. **视频没有任何字幕怎么办？**
+   不少新上传的 B 站视频既没有 CC 字幕、AI 字幕也还没生成（`--list-subs` 只有 `danmaku`）。此时走本地 ASR 兜底：
+   ```bash
+   python src/asr_transcript.py <video_id> [--sample-start 900 --sample-dur 180]
+   ```
+   - 依赖 `faster-whisper`；有 NVIDIA 显卡时自动用 CUDA（显存 ≤4GB 建议 `--compute-type int8_float16`），无卡则 CPU int8。
+   - Windows 上若报 `Library cublas64_12.dll is not found`，装 `nvidia-cublas-cu12 nvidia-cudnn-cu12` 即可，脚本会自动注册 DLL 目录。
+   - 进度实时落盘 `_asr_progress.jsonl`，中断后重跑自动续写。
+   - 可在 `output/<video_id>/_asr_prompt.txt` 放一段本讲领域术语，用来压制同音错词并让中文输出带标点。
+   - 100 分钟课程在 RTX 3050 (4GB) 上约 35 分钟转写完；会产生约 90MB 的 `audio.m4a`，流程结束时按第五步询问是否删除。
+
+6. **自动导出的 cookies 会泄露吗？**
    不会落在仓库里：`dump_transcript.py` / `login_utils.py` 导出的 cookies 写入系统临时目录、用完即删；`cookies.txt` 等模式已加入 `.gitignore`。若需更高清晰度（大会员档位），在 `--setup-profile` 窗口登录大会员账号即可，截帧管线会自动按顶档原生分辨率截取。
 
 ---

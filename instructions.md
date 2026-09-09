@@ -24,7 +24,24 @@ python src/dump_transcript.py "<VIDEO_URL>"
 - 可选参数：`--cookies-from-profile <dir>`（指定配置导出）、`--cookies-file <path>`（Netscape cookies 文件）、`--cookies-from <browser>`（旧方式；Windows 主 Chrome 因新版加密通常不可用，勿默认使用）。
 - **覆盖率自检**：成功时脚本打印"字幕覆盖率"（末段结束时间 / 视频时长）。覆盖率低于 50% 会以退出码 3 结束并打印修复提示——此时不得进入第二步，先按提示解决（通常是登录态问题）。
 - **transcript.json 结构**：除 `segments` 外，现含 `duration`（总时长秒）与 `chapters`（平台官方章节切分，可能为空数组）。第二步必须利用这两个字段。
-- 如果失败，请告知用户可能的原因（无字幕、需要代理、需要登录等），并停止流程。海外视频终端需走代理。
+- **区分两类失败**：
+  - *登录态 / 代理问题*（覆盖率过低、超时、地区限制）：按上面提示修复后重跑本步。
+  - *平台确实没有字幕*：`--list-subs` 只有 `danmaku`、播放器接口 `subtitle.subtitles` 为 `[]`（新上传视频常见，B 站 AI 字幕尚未生成）。此时**不要停止流程**，转入下面的本地 ASR 兜底。
+- 如果失败且无法兜底，请告知用户可能的原因（无字幕、需要代理、需要登录等），并停止流程。海外视频终端需走代理。
+
+#### 兜底：本地 ASR 转写（平台无任何字幕时）
+
+```bash
+python src/asr_transcript.py <video_id>
+```
+
+- 脚本自行完成：只下载音频轨（`output/<id>/audio.m4a`，不下载视频流）→ faster-whisper `large-v3` 转写 → 按标点/时长切成接近平台字幕粒度的短段 → 写出 `transcript.json`（字段与 `scraper.get_transcript` 完全同构：`video_url / title / video_id / duration / chapters / segments`）与 `transcript.txt`。因此第二步之后的所有步骤无需任何改动。
+- **先试跑再全量**：`--sample-start 900 --sample-dur 180` 转写 3 分钟抽样，确认质量与速度后再跑全量。
+- **领域术语提示**：在 `output/<id>/_asr_prompt.txt` 写入本讲主题与术语（一两百字即可，Whisper 的 prompt 上限约 224 token，过长会被截断）。它能显著压制同音错词，并让中文输出自带标点。**PowerShell 下不要用命令行传含中文引号的长 prompt**（弯引号会被当成字符串定界符），一律走文件。
+- **算力**：有 NVIDIA 显卡自动用 CUDA，显存 ≤4GB 用 `--compute-type int8_float16`；无卡自动退 CPU int8。Windows 报 `Library cublas64_12.dll is not found` 时装 `nvidia-cublas-cu12 nvidia-cudnn-cu12`，脚本已自动注册这些 DLL 目录。
+- **断点续跑**：进度实时写入 `output/<id>/_asr_progress.jsonl`，中断后重跑自动从末尾续接；`--restart` 强制从头（试跑后跑全量务必带上，否则会漏掉试跑区间之前的内容）。
+- **耗时预期**：100 分钟课程在 RTX 3050 (4GB) 上约 35 分钟；期间可并行准备第三步的截帧环境与术语表。
+- 转写完成后，仍要执行覆盖率自检（脚本已内置），低于 50% 说明没跑完，重跑续写。
 
 ### 第二步：阅读字幕 + 生成电子书
 
@@ -139,7 +156,8 @@ python -m http.server 8080 --directory output/<video_id>
 ## 注意事项
 
 - 工作目录始终为本仓库根目录（即本文件所在目录），所有相对路径（如 `output/<video_id>/...`）均相对于它解析
-- 所有 Python 命令使用 `python` 执行（不要用 `pip`，用 `python -m pip`）
+- 所有 Python 命令使用 `python` 执行（不要用 `pip`，用 `python -m pip`）；本仓库若用 uv 管理则用 `.venv\Scripts\python.exe` 或 `uv run python`
+- **ASR 兜底稿同样是"原始字幕"**：`asr_transcript.py` 产出的 `transcript.json` 在后续步骤中与平台字幕完全等价，同样需要建立术语表、容忍同音错词、产出 `transcript.corrected.txt`。本地 large-v3 的错词率通常低于平台 AI 字幕，但仍需人工订正专有名词。
 - 所有外部工具（yt-dlp）通过 `sys.executable -m yt_dlp` 调用
 - 如果用户提供的是 YouTube 链接且终端无代理，字幕抓取可能会失败
 - **沙箱/提权**：启动 Chrome / 读取浏览器 cookie 库的命令必须沙箱外执行：`dump_transcript.py`（B 站）、`capture_frames.py`、`capture_frames.py --setup-profile`；`post_process.py`、`http.server` 沙箱内即可。在 Codex 中对应 require_escalated 审批。
