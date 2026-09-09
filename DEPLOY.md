@@ -78,3 +78,14 @@ GitHub 会自动重新部署。
 （`https://github.com/Luke-Evan/videobook`，见 `build_index_html` 中的链接）。
 希望点它跳转到你自己的仓库，在执行第 1 步前把该 URL 改成
 `https://github.com/tengta119/videos-to-notes` 即可。
+
+
+
+# 一条龙的"新机器初始化"清单
+```bash
+git clone <你的仓库> && cd videobook
+pip install -r requirements.txt
+python src/capture_frames.py --setup-profile   # 扫码登录一次
+```
+
+之后就能正常用：把视频链接发给 AI 助手，按 instructions.md 流水线走。
