@@ -6,8 +6,8 @@ Usage:
     python capture_frames.py <video_id> [video_url] [--method auto|dedicated]
                              [--materialize-only] [--profile-dir PATH]
 
-Capture method (project policy, Chrome >= 136 compatible):
-  dedicated  Playwright launches Chrome with a DEDICATED user-data-dir
+Capture method (project policy, Edge/Chrome >= 136 compatible):
+  dedicated  Playwright launches Microsoft Edge (or Chrome as fallback) with a DEDICATED user-data-dir
              (<repo>/.capture-profile by default). Chrome forbids any remote
              debugging (port or pipe) on the DEFAULT user-data-dir since
              v136, so this profile is initialized once via --setup-profile:
@@ -69,17 +69,27 @@ def detect_platform(video_id: str, video_url: str) -> str:
     return ""
 
 
+def split_bvid(video_id: str):
+    """'BV1xxx_p2' -> ('BV1xxx', 2)；yt-dlp 多 P 目录名带 _pN 后缀，bvid 本身不含。"""
+    m = re.match(r"(BV[a-zA-Z0-9]+)(?:_p(\d+))?$", video_id)
+    if m:
+        return m.group(1), int(m.group(2) or 1)
+    return video_id, 1
+
+
 def build_url(platform: str, video_id: str, sec: int) -> str:
     if platform == "bilibili":
-        return (f"https://player.bilibili.com/player.html?bvid={video_id}"
-                f"&t={sec}&autoplay=1&high_quality=1&danmaku=0")
+        bvid, page = split_bvid(video_id)
+        return (f"https://player.bilibili.com/player.html?bvid={bvid}"
+                f"&p={page}&t={sec}&autoplay=1&high_quality=1&danmaku=0")
     return f"https://www.youtube.com/embed/{video_id}?start={sec}&autoplay=1"
 
 
 def build_main_url(platform: str, video_id: str, sec: int) -> str:
     """D 层兜底页面：主站观看页。"""
     if platform == "bilibili":
-        return f"https://www.bilibili.com/video/{video_id}/?t={sec}"
+        bvid, page = split_bvid(video_id)
+        return f"https://www.bilibili.com/video/{bvid}/?p={page}&t={sec}"
     return f"https://www.youtube.com/watch?v={video_id}&t={sec}s"
 
 
@@ -106,13 +116,17 @@ def frames_missing(timestamps, imgdir):
             if not os.path.exists(os.path.join(imgdir, "shot_" + ts.replace(":", "_") + ".png"))]
 
 
-def find_chrome_exe():
+def find_browser_exe(browser="edge"):
     candidates = []
     if sys.platform == "win32":
-        for env in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
-            base = os.environ.get(env)
-            if base:
-                candidates.append(os.path.join(base, "Google", "Chrome", "Application", "chrome.exe"))
+        roots = [os.environ.get(e) for e in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")]
+        products = [("Microsoft", "Edge", "Application", "msedge.exe"),
+                    ("Google", "Chrome", "Application", "chrome.exe")]
+        if browser == "chrome":
+            products.reverse()
+        for base in filter(None, roots):
+            for product in products:
+                candidates.append(os.path.join(base, *product))
     elif sys.platform == "darwin":
         candidates.append("/Applications/Google Chrome.app/Contents/Google Chrome")
     else:
@@ -127,13 +141,19 @@ def find_chrome_exe():
     return None
 
 
+def find_chrome_exe():
+    """Backward-compatible alias; Edge is now preferred."""
+    return find_browser_exe("edge")
+
+
 def setup_profile(profile_dir: str, open_url: str = "https://www.bilibili.com") -> None:
     """One-time init: open Chrome with the dedicated profile for manual login."""
-    exe = find_chrome_exe()
+    browser = os.environ.get("VIDEOBOOK_BROWSER", "edge").lower()
+    exe = find_browser_exe(browser)
     if not exe:
-        sys.exit("Chrome executable not found")
+        sys.exit("Microsoft Edge/Chrome executable not found")
     os.makedirs(profile_dir, exist_ok=True)
-    print("opening Chrome with the dedicated capture profile ...")
+    print(f"opening {('Microsoft Edge' if 'msedge' in exe.lower() else 'Chrome')} with the dedicated capture profile ...")
     print("log in to the platforms you need (bilibili / YouTube) in that window,")
     print("then CLOSE the window to finish setup.")
     subprocess.run([exe, f"--user-data-dir={profile_dir}", open_url])
@@ -163,16 +183,19 @@ def _force_top_quality(page):
 
 def _probe_native_size(page, video_id):
     """B 层：查询顶档原生分辨率 [w,h]，用于 1:1 viewport。"""
+    bvid, pno = split_bvid(video_id)
     try:
-        return page.evaluate("""async (bvid) => {
-            const cid = (await (await fetch('https://api.bilibili.com/x/web-interface/view?bvid=' + bvid)).json()).data.cid;
+        return page.evaluate("""async ({bvid, pno}) => {
+            const view = (await (await fetch('https://api.bilibili.com/x/web-interface/view?bvid=' + bvid)).json()).data;
+            const pages = view.pages || [];
+            const cid = (pages[pno - 1] || view).cid;
             const d = (await (await fetch('https://api.bilibili.com/x/player/playurl?bvid=' + bvid + '&cid=' + cid + '&qn=120&fnval=4048', {credentials:'include'})).json()).data;
             const vids = ((d || {}).dash || {}).video || [];
             if (!vids.length) return null;
             const top = Math.max.apply(null, vids.map(v => v.id));
             const v = vids.filter(x => x.id === top).sort((a, b) => b.bandwidth - a.bandwidth)[0];
             return [v.width, v.height];
-        }""", video_id)
+        }""", {"bvid": bvid, "pno": pno})
     except Exception:
         return None
 
@@ -218,8 +241,10 @@ def _shoot(page, sec, name, imgdir, urls):
 
 
 def _run_capture(p, shots, imgdir, profile_dir, video_id, platform, headless):
+    browser = os.environ.get("VIDEOBOOK_BROWSER", "edge").lower()
+    channel = "msedge" if browser != "chrome" else "chrome"
     ctx = p.chromium.launch_persistent_context(
-        profile_dir, channel="chrome", headless=headless,
+        profile_dir, channel=channel, headless=headless,
         viewport={"width": 1280, "height": 720},
         args=["--autoplay-policy=no-user-gesture-required"])
     try:

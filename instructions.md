@@ -19,7 +19,7 @@ python src/dump_transcript.py "<VIDEO_URL>"
 ```
 
 - 脚本会自动检测平台，抓取字幕并保存为 `output/<video_id>/transcript.json`。
-- **B 站登录态自动获取**：B 站视频在专用配置 `.capture-profile/` 存在登录态时，脚本会自动导出 cookies（系统临时目录、用完即删，不会落入仓库）。该过程启动无头 Chrome，**需沙箱外执行**（Codex 中申请 require_escalated）。
+- **B 站登录态自动获取**：B 站视频在专用配置 `.capture-profile/` 存在登录态时，脚本会自动导出 cookies（系统临时目录、用完即删，不会落入仓库）。默认启动无头 Edge；可用 `VIDEOBOOK_BROWSER=chrome` 切换 Chrome。
 - 若提示专用配置无登录态：请用户先运行 `python src/capture_frames.py --setup-profile` 登录一次（扫码即可），再重试。
 - 可选参数：`--cookies-from-profile <dir>`（指定配置导出）、`--cookies-file <path>`（Netscape cookies 文件）、`--cookies-from <browser>`（旧方式；Windows 主 Chrome 因新版加密通常不可用，勿默认使用）。
 - **覆盖率自检**：成功时脚本打印"字幕覆盖率"（末段结束时间 / 视频时长）。覆盖率低于 50% 会以退出码 3 结束并打印修复提示——此时不得进入第二步，先按提示解决（通常是登录态问题）。
@@ -75,7 +75,7 @@ python src/asr_transcript.py <video_id>
 - 全部时间戳截完后执行物化：`python src/capture_frames.py <video_id> --materialize-only`。
 - 扩展未连接、截图失败、或运行环境不是 Codex/ChatGPT 桌面应用时，进入优先级 1。
 
-#### 优先级 1：专用截帧配置（v2 管线，所有 Agent 环境通用）
+#### 优先级 1：专用截帧配置（v2 管线，默认使用 Edge）
 
 Chrome 136+ 的安全策略禁止对**默认**用户数据目录做任何远程调试，因此脚本改用专用数据目录（默认仓库根目录下 `.capture-profile/`）：不与主 Chrome 冲突，也不受调试禁令限制。
 
@@ -85,7 +85,7 @@ Chrome 136+ 的安全策略禁止对**默认**用户数据目录做任何远程�
 python src/capture_frames.py --setup-profile
 ```
 
-- 脚本会用专用配置启动一个 Chrome 窗口：在其中登录你需要的平台（B 站 / YouTube），然后关闭窗口。Cookies 持久化在 `.capture-profile/`，此后截帧自动携带登录态画质。**登录账号的会员等级决定截图清晰度上限**（需要更高档位时用大会员账号登录）。
+- 脚本会用专用配置启动一个 Edge 窗口：在其中登录你需要的平台（B 站 / YouTube），然后关闭窗口。Cookies 持久化在 `.capture-profile/`，此后截帧自动携带登录态画质。需要使用 Chrome 时先设置 `VIDEOBOOK_BROWSER=chrome`。
 
 **日常截帧：**
 

@@ -33,7 +33,7 @@
    若平台侧根本没有字幕（作者未上传 CC、B 站 AI 字幕尚未生成），自动兜底 `python src/asr_transcript.py <video_id>`：
    用 yt-dlp 只拉音频轨，再交给本地 faster-whisper（large-v3）转写，产出**与平台字幕完全同构**的 `transcript.json`，后续各步零改动。
 2. **重写 编排 (Stitching)**: AI 利用大模型能力将乱七八糟的字幕提取要义改写为 Markdown，并在关键讲解处插入 `![描述](SCREENSHOT:00:15:30)` 时间戳指令占位。
-3. **截帧 插图 (Capturing)**：在已登录浏览器中直接截取平台播放器画面（画质直接来自平台，不下载任何媒体文件）：Codex 桌面环境首选 Chrome 扩展（@Chrome）；通用脚本 `python src/capture_frames.py` 使用专用截帧配置（`.capture-profile/`，一次性登录、长期复用登录态；Chrome 136+ 禁止对默认配置远程调试，故不触碰主 Chrome），失败后才兜底 `python src/extract_frames.py`（下载视频源用 ffmpeg 抽帧，文件保留至流程结束并询问用户是否删除）。两者都会把 `book.md` 中的占位符物化为真实图片链接（原标签稿自动备份为 `book.tagged.md`）；HTML 中的截图支持点击放大浏览。
+3. **截帧 插图 (Capturing)**：在已登录浏览器中直接截取平台播放器画面（画质直接来自平台，不下载任何媒体文件）：Codex 桌面环境首选 Edge/Chrome 扩展；通用脚本 `python src/capture_frames.py` 默认使用 Edge 专用截帧配置（`.capture-profile/`，一次性登录、长期复用登录态；也可设置 `VIDEOBOOK_BROWSER=chrome`），失败后才兜底 `python src/extract_frames.py`。
 4. **渲染 网页 (Rendering)**: 调用 `python src/post_process.py <url> <md>` 把所有占位的锚点改造成 YouTube/B站原生轻量级 `iframe` 代码，并且注入极简暗色主题，把枯燥的 `.md` 内容最终渲染为可直接在线看的富文本 `.html`。
 5. **发服 预览 (Serving)**: 通过 Python 挂起一个简易的本地 HTTP 服务器。
 
@@ -49,7 +49,7 @@
    由于跨域安全以及 Cookie 隐私保护协议问题，内嵌在线带有交互控制器的播放组件如果是在没有后端协议的本地静态环境（浏览器左上角地址栏为 `file:///...`），视频源将会强制拒载报错加载失败。所以必须通过本地 HTTP 服务解决该隐患缺陷。
 
 3. **专享和会员加密资源抓取受限？**
-   对于大会员等登录拦截权限视频，可以通过在内部提取命令后边挂载 `--cookies-from chrome` 的相关指令，向你所在的本地机器的相应常驻浏览器的 Cookie 中调用以通过验证拿到字幕文件！
+   对于大会员等登录拦截权限视频，推荐先在项目专用 Edge 配置中登录，再使用 `--cookies-from-profile .capture-profile` 导出 Cookie；如需切换 Chrome，可设置 `VIDEOBOOK_BROWSER=chrome`。
 
 4. **在 AI 沙箱（如 Codex）里运行为何报"拒绝访问"？哪些命令需要沙箱外执行？**
    本流水线的截帧与字幕抓取需要启动 Chrome / Playwright、读取浏览器 cookie 库，属于沙箱外权限。托管给 AI 助手时，以下命令应申请沙箱外执行（Codex 中即批准 require_escalated）：
@@ -75,6 +75,24 @@
 ---
 
 ## 📚 成品在哪里看？
+
+## AMD 显卡本地 ASR（可选）
+
+`faster-whisper` 的 GPU 路径面向 NVIDIA CUDA。AMD 用户可安装并编译支持 Vulkan 的
+[`whisper.cpp`](https://github.com/ggml-org/whisper.cpp)，然后使用新增脚本；它会复用
+`output/<视频ID>/audio.m4a`，并写出相同格式的字幕文件：
+
+```powershell
+cmake -B build -DGGML_VULKAN=1
+cmake --build build --config Release
+python src/asr_whispercpp.py <视频ID> `
+  --cli .\whisper.cpp\build\bin\Release\whisper-cli.exe `
+  --model .\whisper.cpp\models\ggml-large-v3.bin
+```
+
+需要先用 `dump_transcript.py` 或 `asr_transcript.py` 下载音频。Vulkan 是否使用 AMD
+GPU 取决于显卡驱动；可在 whisper.cpp 输出的 `system_info` 中确认。生成的
+`transcript.json` 可直接交给现有电子书整理、截图和 HTML 流程。
 
 - **在线阅读（GitHub Pages）**：`https://luke-evan.github.io/videobook/` —— 落地页列出全部电子书，点击标题即可阅读（含截图放大、Mermaid 交互）。需在仓库 Settings → Pages 一次性选择分支 `pages` + `/ (root)`。
 - **分支布局**：`main` = 工具代码；`pages` = 成品（独立 orphan 分支，目录名 = 视频标题，如 `提示词工程 [02-Raw／26生成式软件工程／NJU]`）。

@@ -1,7 +1,7 @@
 """登录态工具：从专用截帧配置（.capture-profile）导出 cookies 供 yt-dlp 等使用。
 
-背景：B 站字幕等接口需要登录态；而 yt-dlp --cookies-from-browser chrome 在
-Windows 上因 Chrome 新版 App-Bound 加密（DPAPI v20）无法解密主 Chrome 的 cookies。
+背景：B 站字幕等接口需要登录态；而 yt-dlp --cookies-from-browser 在
+Windows 上可能因浏览器新版 App-Bound 加密无法解密主浏览器 cookies。
 本模块改用 Playwright 直接读取专用配置的 cookie jar（登录态一次配置、长期复用），
 导出为 Netscape cookies.txt。导出文件默认落在系统临时目录，由调用方用完即删。
 """
@@ -18,7 +18,7 @@ _HOME = {
 
 
 def export_cookies(profile_dir=DEFAULT_PROFILE_DIR, out_path=None, platform="bilibili"):
-    """以无头 Chrome 打开平台首页激活 cookie，导出为 Netscape 格式文件。
+    """以无头 Edge（可用 VIDEOBOOK_BROWSER=chrome 切换）打开平台首页激活 cookie，导出为 Netscape 格式文件。
 
     返回 cookies 文件路径（调用方负责删除）。若 profile 未初始化或无登录态，
     仍会导出（可能为空壳），由调用方校验关键字段（如 SESSDATA）。
@@ -29,9 +29,11 @@ def export_cookies(profile_dir=DEFAULT_PROFILE_DIR, out_path=None, platform="bil
         fd, out_path = tempfile.mkstemp(prefix="videobook_cookies_", suffix=".txt")
         os.close(fd)
 
+    browser = os.environ.get("VIDEOBOOK_BROWSER", "edge").lower()
+    channel = "chrome" if browser == "chrome" else "msedge"
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            profile_dir, channel="chrome", headless=True)
+            profile_dir, channel=channel, headless=True)
         try:
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             page.goto(_HOME.get(platform, _HOME["bilibili"]),

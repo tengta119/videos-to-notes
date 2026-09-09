@@ -79,11 +79,15 @@ def hhmmss(sec: float) -> str:
 
 
 def norm_id(arg: str) -> str:
-    """从 BVxxxx 或完整 URL 中取出视频 id。"""
+    """从 BVxxxx 或完整 URL 中取出视频 id，并保留 B 站分 P。"""
     import re
     m = re.search(r"(BV[0-9A-Za-z]{10})", arg)
     if m:
-        return m.group(1)
+        vid = m.group(1)
+        # 一个 BV 号可包含多个分 P；为每个分 P 建立独立工作目录，
+        # 避免合集转写/截图/电子书互相覆盖。
+        pm = re.search(r"[?&]p=(\d+)", arg)
+        return f"{vid}_p{int(pm.group(1))}" if pm else vid
     m = re.search(r"(?:v=|youtu\.be/)([\w-]{11})", arg)
     if m:
         return m.group(1)
@@ -92,6 +96,9 @@ def norm_id(arg: str) -> str:
 
 def video_url_of(vid: str) -> str:
     if vid.startswith("BV") or vid.startswith("av"):
+        m = re.match(r"(.+)_p(\d+)$", vid)
+        if m:
+            return f"https://www.bilibili.com/video/{m.group(1)}?p={m.group(2)}"
         return f"https://www.bilibili.com/video/{vid}"
     return f"https://www.youtube.com/watch?v={vid}"
 
