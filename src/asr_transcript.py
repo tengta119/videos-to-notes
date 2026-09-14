@@ -257,12 +257,37 @@ def _parse_srt_entries(srt_path):
     return entries
 
 
-def run_whisper_chunk(cli, ggml, wav_path, args, prompt):
+_REP_WIN = 12
+# 正常语音的 _repeat_score 通常是 1~2；陷入重复循环时可达数十。
+_REP_THRESHOLD = 5
+
+
+def _repeat_score(entries):
+    """重复度指标：块内任意 12 字窗口出现的最大次数。
+
+    whisper 在个别音频上会陷入「同一句话刷满整块」的重复循环幻觉（时间戳照常
+    前进，故覆盖率自检查不出来），把整块真实内容吃掉。这是检测该故障最灵敏的
+    信号，比关键字匹配更通用。
+    """
+    text = "".join(t for _, _, t in entries)
+    if len(text) < _REP_WIN * 2:
+        return 0
+    counts = {}
+    for i in range(0, len(text) - _REP_WIN, 4):
+        w = text[i:i + _REP_WIN]
+        counts[w] = counts.get(w, 0) + 1
+    return max(counts.values())
+
+
+def run_whisper_chunk(cli, ggml, wav_path, args, prompt, mc=None):
     """对单个 WAV 块跑一次 whisper-cli，返回块内时间（相对 0）的 SRT 条目。
 
     词级模式（默认）加 -ml 1：whisper.cpp 让每个 token 成为独立条目，即官方
     词级时间戳用法；由 transcribe_whispercpp 重组后再走 rechunk，粒度与
     faster-whisper 路径一致。--no-words 时条目即正常段落。
+
+    mc: 覆盖 -mc（携带的上文 token 数）。None 表示用 whisper.cpp 默认值；
+    传 0 可切断跨窗口上下文，用来破除重复循环。
     """
     import tempfile
     prefix = os.path.join(tempfile.gettempdir(),
@@ -271,6 +296,8 @@ def run_whisper_chunk(cli, ggml, wav_path, args, prompt):
            "-t", str(args.threads or (os.cpu_count() or 4)),
            "--no-flash-attn" if args.no_flash_attn else "--flash-attn",
            "-osrt", "-of", prefix, "-pp"]
+    if mc is not None:
+        cmd += ["-mc", str(mc)]
     if not args.no_words:
         cmd += ["-ml", "1"]
     if prompt:
@@ -319,7 +346,23 @@ def transcribe_whispercpp(wav, args, lo, hi, prompt, prog_fh):
             print(f">> [whisper.cpp] 转写块 [{hhmmss(pos)} -> {hhmmss(end)}]"
                   f" ({seg_dur / 60:.1f} 分钟) ...", flush=True)
             tb = time.time()
-            entries = run_whisper_chunk(cli, ggml, tmp_wav, args, prompt)
+            entries = run_whisper_chunk(cli, ggml, tmp_wav, args, prompt,
+                                        args.max_context)
+            if args.loop_guard:
+                # -mc 与是否触发循环并不单调（实测 96 正常、128 循环、160 正常），
+                # 所以没法靠调参一劳永逸，只能事后检测本块、命中则用 -mc 0 重转。
+                bad = _repeat_score(entries)
+                if bad >= _REP_THRESHOLD:
+                    print(f"   ⚠ 疑似重复循环（重复度 {bad}），用 -mc 0 重转本块 ...",
+                          flush=True)
+                    retry = run_whisper_chunk(cli, ggml, tmp_wav, args, prompt, 0)
+                    good = _repeat_score(retry)
+                    if good < bad:
+                        entries = retry
+                        print(f"   已替换为重转结果（重复度 {bad} -> {good}）", flush=True)
+                    else:
+                        print(f"   ⚠ 重转未改善（{good}），保留原结果，请人工核对本块",
+                              flush=True)
             if args.no_words:
                 segs = [_WSeg(st, en, tx) for st, en, tx in entries]
             else:
@@ -373,6 +416,55 @@ def _flush_words(words, start):
 def hhmmss(sec: float) -> str:
     sec = max(0, int(round(sec)))
     return f"{sec // 3600:02d}:{sec % 3600 // 60:02d}:{sec % 60:02d}"
+
+
+def _norm_text(t: str) -> str:
+    return re.sub(r"[\s。，、？！：；,.?!:;\"]", "", t)
+
+
+def dedupe_rows(rows):
+    """折叠进度文件里的重复段（机器伪影，非讲师重复）。
+
+    试跑后未 --restart、或断点续跑整块重转时，同一区间会被写两遍，进度里
+    出现大量"同 start 同 text"段与"合并段+逐字段"变体。三步折叠：
+    1) 相邻 (start, text) 完全相同 -> 只留一条；
+    2) 同 start 组内某段归一化文本被另一段包含 -> 留最长；
+    3) 某段归一化文本 == 紧随其后 2~8 段文本的拼接 -> 合并伪影，删。
+    """
+    rows.sort(key=lambda r: (r["start"], r["end"]))
+    # 同 start 且归一化文本相同即视为重复（两轮转写对同一词可能大小写不同）
+    def _key(r):
+        return (r["start"], _norm_text(r["text"]).casefold())
+    out = []
+    for r in rows:
+        if out and _key(out[-1]) == _key(r):
+            continue
+        out.append(r)
+    flat, i = [], 0
+    while i < len(out):
+        j = i
+        while j + 1 < len(out) and out[j + 1]["start"] == out[i]["start"]:
+            j += 1
+        g = out[i:j + 1]
+        if len(g) > 1:
+            norm = [_norm_text(r["text"]).casefold() for r in g]
+            g = [r for a, r in enumerate(g)
+                 if not any(b != a and norm[a] and norm[a] in norm[b]
+                            for b in range(len(g)))] or g
+        flat.extend(g)
+        i = j + 1
+    norm = [_norm_text(r["text"]).casefold() for r in flat]
+    drop = set()
+    for i in range(len(flat)):
+        acc = ""
+        for k in range(i + 1, min(i + 9, len(flat))):
+            acc += norm[k]
+            if acc == norm[i]:
+                drop.add(i)
+                break
+            if len(acc) > len(norm[i]):
+                break
+    return [r for i, r in enumerate(flat) if i not in drop]
 
 
 def norm_id(arg: str) -> str:
@@ -536,6 +628,12 @@ def main():
     ap.add_argument("--threads", type=int, default=None, help="whisper.cpp CPU 线程数")
     ap.add_argument("--chunk-sec", type=float, default=600,
                     help="whisper.cpp 分块转写粒度（秒），也是断点续跑粒度")
+    ap.add_argument("--max-context", type=int, default=-1,
+                    help="whisper.cpp -mc：携带的上文 token 数（-1 用其默认值）。"
+                         "调大更连贯，但也更容易诱发重复循环幻觉")
+    ap.add_argument("--no-loop-guard", dest="loop_guard", action="store_false",
+                    default=True,
+                    help="关闭重复循环检测（默认开启：命中后自动用 -mc 0 重转该块）")
     ap.add_argument("--no-flash-attn", dest="no_flash_attn", action="store_true", default=True,
                     help="whisper.cpp 关闭 flash-attn（默认关：RDNA4 Vulkan 驱动有崩溃 bug）")
     ap.add_argument("--flash-attn", dest="no_flash_attn", action="store_false",
@@ -676,8 +774,7 @@ def main():
                 print(f"   [{hhmmss(r['start'])}] {r['text']}")
         return
 
-    rows = [json.loads(x) for x in open(prog, encoding="utf-8") if x.strip()]
-    rows.sort(key=lambda r: r["start"])
+    rows = dedupe_rows([json.loads(x) for x in open(prog, encoding="utf-8") if x.strip()])
     segs = [{"start": hhmmss(r["start"]), "end": hhmmss(r["end"]), "text": r["text"]}
             for r in rows if r["text"]]
 

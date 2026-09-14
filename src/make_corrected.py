@@ -285,8 +285,168 @@ MAP = {
     "release这样": "Redis 这样",
     "那个QS是不同": "那个 QPS 是不同",
     "大冒险": "大模型",
+    # ── BV1k3JA6cEAt 【零到全栈】4.2 Vite、npm与前端构建（本地 ASR 稿）──
+    # 课程/项目/人名
+    "领导全栈": "零到全栈",
+    "领导全站": "零到全栈",
+    "优宇锡": "尤雨溪",
+    "Lil2Tech": "zero2tech",
+    "CD Zero to Tag": "cd zero2tech",
+    "Zero to Tag": "zero2tech",
+    "Zero2Tag": "zero2tech",
+    # 口误字/同音词
+    "见值对": "键值对",
+    "建制队": "键值对",
+    "欠套": "嵌套",
+    "dole号": "逗号",
+    "秒急": "秒级",
+    "结偶": "解耦",
+    "制好了": "治好了",
+    "Varion": "version",
+    "Vern": "version",
+    "Jason": "JSON",
+    "scraps": "scripts",
+    "remi": "README",
+    "REME": "README",
+    "dist.access": "dist/assets",
+    # 命令行/包名
+    "init-y": "init -y",
+    "node-v": "node -v",
+    "npm-v": "npm -v",
+    "install-d": "install -D",
+    "bannery": ".bin",
+    "banary": ".bin",
+    "benary": ".bin",
+    "node modules": "node_modules",
+    "NodeModules": "node_modules",
+    "package.lock.json": "package-lock.json",
+    "EnemyJS": "animejs",
+    "enemy.js": "anime.js",
+    "animate.js": "anime.js",
+    "enemy": "anime",
+    "Enemy": "anime",
+    "ngx": "nginx",
+    "NGX": "nginx",
+    "control加shift加c": "Ctrl+Shift+C",
+    "control加c": "Ctrl+C",
+    "command加s": "Command+S",
+    # ── BV1FX7F6UEWq 【零到全栈】4.3 React、前端开发规则（本地 ASR 稿）──
+    # 课程/项目/文件
+    "瑞爱": "React",
+    "REAN": "React",
+    "Viu": "Vue",
+    "viu": "Vue",
+    "resultcard": "ResultCard",
+    "vanillavanilla": "vanilla。vanilla",
+    # 注意：MAP 按 key 长度降序应用，且是「先全量替换再输出」——原文写的是
+    # TaxLab，所以 "TextLab." 这类 key 匹配不到，必须同时给出 TaxLab 变体。
+    "TaxLab.": "textlab.",
+    "taxlab.": "textlab.",
+    # 保护性空映射：4.2 段里的 "Animate"->"anime" 会把 AnimatedCardGrid 吃成
+    # animedCardGrid；key 更长者先应用，所以在这里挡一道。
+    "AnimatedCardGrid": "AnimatedCardGrid",
+    "vatconfig.js": "vite.config.js",
+    "improcardredocard": "InputCard、ResultCard",
+    "InputCardResultCard": "InputCard、ResultCard",
+    "ViteJS然后PluginReact": "@vitejs/plugin-react",
+    "Poweringyourfavoriteframeworks": "Powering your favorite frameworks",
+    # "Vite" + "Config.js" 被切成两段，拼回来才是 Vite.config.js
+    "Config.js": ".config.js",
+    "TextLab.": "textlab.",
+    "TextLabJSX": "textlab.jsx",
+    # 命名规则（据视频画面核对）：组件 PascalCase（TextLabPage.jsx），
+    # HTML 用 kebab-case（text-lab.html），入口文件全小写（textlab.jsx / result.jsx）。
+    "textlabpage": "TextLabPage",
+    "TaxLabPage": "TextLabPage",
+    "TagsLabPage": "TextLabPage",
+    "textlab.html": "text-lab.html",
+    "TaxLab.html": "text-lab.html",
+    "TextLab.html": "text-lab.html",
+    "taxlab.html": "text-lab.html",
+    "techslab.html": "text-lab.html",
+    "techslab": "text-lab.html",
+    "TagsLab": "text-lab.html",
+    "TaxLab.jsx": "textlab.jsx",
+    "TextLab.jsx": "textlab.jsx",
+    "TaxLab": "TextLab",
+    "taxlab": "TextLab",
+    # 第一个入口文件叫 result.jsx（不是 ResultCard.jsx——那是组件）
+    "redout.jsx": "result.jsx",
+    "readout.jsx": "result.jsx",
+    "pagehiding": "PageHeading",
+    "PageHiding": "PageHeading",
+    "improcard": "InputCard",
+    "redocard": "ResultCard",
+    "REDOCARD": "ResultCard",
+    "resultcar": "ResultCard",
+    "result.car": "ResultCard",
+    "readallcar": "ResultCard",
+    "readrcard": "ResultCard",
+    "readercar": "ResultCard",
+    "redout": "ResultCard",
+    "readout": "ResultCard",
+    "homepage.jsx": "HomePage.jsx",
+    "ViteConfig": "vite.config.js",
+    "vatconfig": "vite.config.js",
+    "man.jsx": "main.jsx",
+    "withoutroot": "result-root",
+    "toTagDemos": "zero2tech-demos",
+    "zerotag": "zero2tech",
+    "demo的remix": "demo 的 README",
+    # 命令行
+    "npmcreatevit": "npm create vite",
+    "npmcreatebit": "npm create vite",
+    "npminstall": "npm install",
+    "NPMInstall": "npm install",
+    "NPMinstall": "npm install",
+    "npmrun": "npm run",
+    "nodemodules": "node_modules",
+    "cmd+s": "Ctrl+S",
+    "怎么加C复制": "怎么 Ctrl+C 复制",
+    "怎么加B": "怎么 Ctrl+V",
+    "NPMTree": "npm trends",
+    # 术语/组件库
+    "安特迪赞": "Ant Design",
+    "yeslint": "ESLint",
+    "reactbeats": "React Bits",
+    "出类旁通": "触类旁通",
+    "悲词疾笔": "非此即彼",
+    "两参": "两掺",
+    "附用": "复用",
+    "服用": "复用",
+    "加盟录": "家目录",
+    "尤与锡": "尤雨溪",
+    # 幻听/片尾（本地 ASR 噪声，整段删除）
+    "Isurewanttopass": "",
+    "优优独播剧场——YoYoTelevisionSeriesExclusive": "",
 }
 _MAP_ITEMS = sorted(MAP.items(), key=lambda kv: -len(kv[0]))
+
+# 英文错词但需词边界保护（防止 Inter→Intel 误伤 Internet、beat 误伤 heartbeat 等）；
+# ASCII 前后不接字母即算边界，中文紧邻时可正常命中。
+REGEX = [
+    (re.compile(r"(?<![A-Za-z])(?:vit|vita)(?![A-Za-z])", re.I), "Vite"),
+    (re.compile(r"(?<![A-Za-z])beat(?![A-Za-z])", re.I), "Vite"),
+    (re.compile(r"(?<![A-Za-z])inter(?![A-Za-z])", re.I), "Intel"),
+    (re.compile(r"(?<![A-Za-z])scribe(?![A-Za-z])", re.I), "scripts"),
+    (re.compile(r"(?<![A-Za-z])nodejs(?![A-Za-z.])", re.I), "Node.js"),
+    # 原来在 MAP 里写的是 "Animate"->"anime"，但 str.replace 是子串替换，
+    # 会把 AnimatedCardGrid 吃成 animedCardGrid。改成带词边界的正则。
+    (re.compile(r"(?<![A-Za-z])animate(?![A-Za-z])", re.I), "anime"),
+    # 4.3 讲：React 被识别成 read / real / rei / re-i 等独立 ASCII 词，Vue 被识别成 view。
+    # 已核对全部讲次的字幕，这些独立词只出现在本讲，不会误伤其他视频的合法用法；
+    # 词边界保护 README（后接 M）、already/thread（前接字母）等。
+    (re.compile(r"(?<![A-Za-z])(?:re-?(?:add|i)|readd|read|rea)(?![A-Za-z])", re.I), "React"),
+    (re.compile(r"(?<![A-Za-z])real(?![A-Za-z-])", re.I), "React"),
+    (re.compile(r"(?<![A-Za-z])view(?![A-Za-z])", re.I), "Vue"),
+    # 专有名词统一大小写（ASR 大小写不稳）。react 后接 "-" 时不匹配，
+    # 以免把 npm 包名 react-dom / react-router 改坏。
+    # 前面是 "-" 时不动：@vitejs/plugin-react、react-dom 这类包名要保留小写
+    (re.compile(r"(?<![A-Za-z-])react(?![A-Za-z-])", re.I), "React"),
+    (re.compile(r"(?<![A-Za-z])vue(?![A-Za-z])", re.I), "Vue"),
+    # 后面跟 "." / "-" 时不动：vite.config.js、vite-preview 这类是文件名/包名
+    (re.compile(r"(?<![A-Za-z])vite(?![A-Za-z.-])", re.I), "Vite"),
+]
 
 # 整段即为口癖 -> 删除该段
 FILLER_ONLY = {"呃", "嗯", "啊", "哦", "啧", "哎", "哎呀", "哈哈", "哈哈哈", "嘿嘿",
@@ -304,6 +464,8 @@ def correct(text: str):
     for old, new in _MAP_ITEMS:
         if old in text:
             text = text.replace(old, new)
+    for pat, rep in REGEX:
+        text = pat.sub(rep, text)
     text = text.replace("呃", "").replace("嗯", "")
     text = STUTTER.sub(r"\1", text)
     text = TAIL_FILLER.sub("", text).strip()
