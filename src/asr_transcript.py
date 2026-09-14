@@ -94,7 +94,10 @@ MODELS_DIR = os.path.join(TOOLS_DIR, "models")
 WHISPERCPP_REPO = "lemonade-sdk/whisper.cpp-rocm"
 WHISPERCPP_TAG = os.environ.get("VIDEOBOOK_WHISPERCPP_TAG", "v1.8.4")
 # GGML 模型体积较大，从 HuggingFace ggerganov/whisper.cpp 直下。
-GGML_BASE_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main"
+# 国内网络可设 VIDEOBOOK_GGML_BASE_URL=https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main
+GGML_BASE_URL = os.environ.get(
+    "VIDEOBOOK_GGML_BASE_URL",
+    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main")
 
 TS_RE = re.compile(r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*"
                    r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})")
@@ -152,6 +155,12 @@ def _download(url, dest):
                 print(f"\r   {got / 1e6:.0f}/{total / 1e6:.0f} MB "
                       f"({got / total:.0%})", end="", flush=True)
     print()
+    if total and got != total:
+        # 连接被中途掐断时 urllib 可能静默 EOF，不留校验就会落一个"看起来完整"的残档
+        os.remove(tmp)
+        raise SystemExit(f">> 下载不完整（{got}/{total} 字节），已删除残档。"
+                         f"请重跑本命令；网络不稳时挂代理，HF 不可达可设 "
+                         f"VIDEOBOOK_GGML_BASE_URL 指向 hf-mirror。")
     os.replace(tmp, dest)
     return dest
 
@@ -181,7 +190,7 @@ def _extract_zip_member(zip_path, exe_name, out_dir):
 
 def install_amd(arch, model_name, cli_only=False):
     """下载 whisper.cpp ROCm 预构建 + GGML 模型到 tools/。一次性操作。"""
-    asset = f"whisper-{WHISPERCPP_TAG.lstrip('v')}-release-windows-rocm-{arch}.zip"
+    asset = f"whisper-{WHISPERCPP_TAG}-windows-rocm-{arch}.zip"
     url = f"https://github.com/{WHISPERCPP_REPO}/releases/download/{WHISPERCPP_TAG}/{asset}"
     os.makedirs(CLI_DIR, exist_ok=True)
     zpath = os.path.join(TOOLS_DIR, asset)
