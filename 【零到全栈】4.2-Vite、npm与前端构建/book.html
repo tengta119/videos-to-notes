@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【零到全栈】4.2：Vite、npm 与前端构建</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="42vitenpm">【零到全栈】4.2：Vite、npm 与前端构建</h1>
+<blockquote>
+<p>本书整理自 B 站课程《零到全栈》第 4.2 讲《Vite、npm 与前端构建》（BV1k3JA6cEAt，约 58 分钟），
+将授课口语重构为书面技术指南。上一讲（4.1）完成了项目的模块化改造，本讲解决模块化之后遗留的三大痛点：
+引入 Node.js、npm 与 Vite 三个工具，体验构建工具的三条核心命令，并把第三方库从 CDN 收编到本地。</p>
+</blockquote>
+<h2 id="_1">引言：本讲的三个新工具</h2>
+<p><em>(参考时间: 01:44)</em></p>
+<p>上一节 4.1 我们给项目做了模块化改造，迈出了现代前端的第一步。这一节开始使用三个有意思的工具：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_02_00.png" alt="本讲三大工具：Vite、npm、Node.js" loading="lazy">
+  <p class="video-caption">📷 本讲三大工具：Vite、npm、Node.js<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=120" target="_blank" rel="noopener">在 B 站中打开 (00:02:00)</a></p>
+</div>
+
+<ul>
+<li><strong>Vite</strong>：前端构建工具，本讲主角；</li>
+<li><strong>npm</strong>：包管理工具，学会这一节，以后无论做前端开发还是玩开源工具都用得到；</li>
+<li><strong>Node.js</strong>：JavaScript 在浏览器之外的运行环境，是前两者的地基。</li>
+</ul>
+<p>在进入正题之前，先给上节课收个尾。如果听 4.1 时觉得"看了各种 import/export 却没学会"，其实没关系——上一课只需要带走两个结论：</p>
+<ol>
+<li><strong>模块化势在必行</strong>：前端技术发展到今天，必然走向模块化；</li>
+<li><strong>模块化之后必须走服务器</strong>：改造完成的项目不能再双击 HTML 直接打开页面，浏览网页必须通过 HTTP 访问。</li>
+</ol>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_02_44.png" alt="4.1 回顾：模块化改造后引用关系变得清晰" loading="lazy">
+  <p class="video-caption">📷 4.1 回顾：模块化改造后引用关系变得清晰<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=164" target="_blank" rel="noopener">在 B 站中打开 (00:02:44)</a></p>
+</div>
+
+<h2 id="1">1. 模块化之后遗留的三个痛点</h2>
+<p><em>(参考时间: 03:50)</em></p>
+<p>import/export 机制的确是个好规矩，它让 JS 代码之间的引用变得清晰。但从开发者的角度看，我们的体验变好了吗？——并没有。学到今天这一步，前端还有三个没解决的问题。</p>
+<h3 id="11">1.1 痛点一：改一个字，也要走一次发布流程</h3>
+<p><em>(参考时间: 04:09)</em></p>
+<p>学基础前端时，每次改完代码直接刷新页面就能看效果。可模块化改造之后，按上一节的流程，哪怕只改一个字，想看效果都得走一轮完整发布：提交 → push → 登录服务器 pull → 刷新页面。这一轮折腾下来，开发体验非常差。</p>
+<h3 id="12">1.2 痛点二：文件拆得越多，页面加载越慢</h3>
+<p><em>(参考时间: 04:36)</em></p>
+<p>只是开发体验差吗？你有没有感觉到，模块化之后<strong>页面访问也变慢了</strong>。用浏览器开发者工具（F12，或右键 → 检查）刷新一次页面看 Network 面板：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_05_06.png" alt="Network 面板：十几个请求排成长队，光 CSS 就有 8 个文件" loading="lazy">
+  <p class="video-caption">📷 Network 面板：十几个请求排成长队，光 CSS 就有 8 个文件<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=306" target="_blank" rel="noopener">在 B 站中打开 (00:05:06)</a></p>
+</div>
+
+<p>十几个网络请求排成长队——光 CSS 就有 8 个文件，每个都得单独走一次网络请求，再加上几个 JS 和 anime.js，浏览器要一个一个去拿。</p>
+<p>还记得我们为什么要拆文件吗？好处列过很多：多个文件分工明确，人写代码方便多人协作和集成；AI 写代码时可以只加载必要的文件，有效减少上下文。<strong>但对写代码的人是好事，对浏览器和最终用户未必</strong>——网页变慢了。</p>
+<p>看请求时间线：本来 200 毫秒以内就能拿到前几个文件，但总有文件把响应拖到 800 毫秒。网站再大一点，请求会越来越多，时间线甚至可能超过两秒。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_05.png" alt="请求时间线：部分资源的响应被拖到 800ms 左右" loading="lazy">
+  <p class="video-caption">📷 请求时间线：部分资源的响应被拖到 800ms 左右<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=365" target="_blank" rel="noopener">在 B 站中打开 (00:06:05)</a></p>
+</div>
+
+<h3 id="13">1.3 痛点三：浏览器缓存</h3>
+<p><em>(参考时间: 06:22)</em></p>
+<p>第三个问题更隐蔽：<strong>缓存</strong>。浏览器有缓存机制——用户请求过某个文件后，浏览器会把它存起来；下次刷新还要请求同一个文件时，浏览器一看是同名文件，就不再请求，直接把上次存的旧文件塞给用户。</p>
+<p>缓存这东西好不好？也好：它让访问网页感觉更快，尤其在网络不好时。但反过来想：<strong>如果网站更新了呢？</strong> 假如只改了某个 CSS 文件里的一行代码（改了个 feature 或修了个 bug），浏览器却还在用缓存里的旧版本——这是最难受的。</p>
+<p>早年有些经验的程序员写 CSS 时，会把文件名写"脏"：在名字后面拼一个时间戳，比如 <code>layout.20240315.css</code> 这样。哪天改了代码，就顺手改一下时间戳。因为浏览器是<strong>按文件名匹配缓存</strong>的，名字一变，缓存自然失效。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_54.png" alt="早期手动方案：在 CSS 文件名后面拼时间戳来规避缓存" loading="lazy">
+  <p class="video-caption">📷 早期手动方案：在 CSS 文件名后面拼时间戳来规避缓存<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=474" target="_blank" rel="noopener">在 B 站中打开 (00:07:54)</a></p>
+</div>
+
+<h3 id="14">1.4 三个问题的责任归属</h3>
+<p><em>(参考时间: 08:18)</em></p>
+<p>严格说，这三个问题不全是模块化的锅：</p>
+<ul>
+<li><strong>只有第一个</strong>（开发流程笨重）是模块化改造直接带来的新问题；</li>
+<li><strong>第二个</strong>（请求太多）与模块化有一定关系——模块化本来就要求代码尽量解耦；</li>
+<li><strong>第三个</strong>（缓存）不算模块化的锅——基础前端阶段同样存在。</li>
+</ul>
+<p>但不管责任在谁，走到今天这一步，这些痛点让开发体验和用户的浏览访问体验都不怎么好，必须解决。</p>
+<h2 id="2">2. 构建工具：调和三方矛盾的角色</h2>
+<p><em>(参考时间: 08:58)</em></p>
+<p>分析这三个问题的背后，其实凸显出了一组矛盾——<strong>工程治理、开发体验、用户体验</strong>三者之间的矛盾：</p>
+<div class="highlight"><pre><span></span><code>graph TD
+    A["工程治理&lt;br/&gt;更规范、更安全、易维护、易扩展"] &lt;--&gt;|互相拉扯| B["开发者&lt;br/&gt;过程简单、顺手、舒服"]
+    B &lt;--&gt;|互相拉扯| C["浏览器与用户&lt;br/&gt;加载快、资源少、性能高"]
+    C &lt;--&gt;|互相拉扯| A
+</code></pre></div>
+
+<ul>
+<li><strong>工程治理</strong>是一套治理思想和规则，设计规则的人希望项目规范、安全、易维护、易扩展，确保在承载复杂业务逻辑时规则一直有效；</li>
+<li><strong>开发者</strong>希望开发过程尽可能简单、顺手、舒服；</li>
+<li><strong>浏览器和最终用户</strong>希望页面加载更快、资源更少、性能更高。</li>
+</ul>
+<p>这三个目标经常互相拉扯：为了规范，可能牺牲一点开发便利；为了开发便利，可能影响运行效率；为了运行效率，又可能需要增加更多工程规则。</p>
+<p>有没有办法让三方都尽量满意？<strong>这就是构建工具（Build Tool）所做的事情</strong>：工程治理这边"我 respect 你的规矩"；开发者这边"你怎么方便我怎么来"；浏览器这边"你想要什么样的资源，我负责把源码转成你想要的样子"。这个过程就叫做<strong>前端构建</strong>。</p>
+<p>构建工具的三项能力，恰好一一对应三个痛点：</p>
+<table>
+<thead>
+<tr>
+<th>构建工具的能力</th>
+<th>做法</th>
+<th>解决的痛点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>本地起服务 + 热更新</strong></td>
+<td>不用发布到远程服务器；代码一保存，浏览器自己就更新，秒级生效，连刷新按钮都不用点</td>
+<td>痛点一</td>
+</tr>
+<tr>
+<td><strong>合并碎文件</strong></td>
+<td>人写的时候八个十个一百个都没问题，交付时尽量合在一起：8 个 CSS 合成 1 个，8 次请求变 1 次</td>
+<td>痛点二</td>
+</tr>
+<tr>
+<td><strong>自动加文件指纹</strong></td>
+<td>根据文件内容算出哈希拼进文件名；内容一变指纹就变、文件名就变，浏览器不再走缓存，不必再手动加时间戳</td>
+<td>痛点三</td>
+</tr>
+</tbody>
+</table>
+<h3 id="21-vite">2.1 为什么选 Vite</h3>
+<p><em>(参考时间: 11:55)</em></p>
+<p>构建工具有不少，早些年最知名的是 <strong>webpack</strong>，但最近几年最流行的已经不是它了。现在前端开发的首选构建工具叫 <strong>Vite</strong>。</p>
+<p>这个名字有些小伙伴会按英文习惯念成 "ve-ti"，但它其实是个法语词，法语里读 "vit"。你可能以为这是法国人做的工具——其实不是，<strong>Vite 的作者是中国人尤雨溪</strong>。我们选它并不只是因为作者是中国人，更是因为 Vite 已经是当前前端构建工具中最优秀的存在。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_18.png" alt="Vite：法语词，作者尤雨溪，当下首选构建工具" loading="lazy">
+  <p class="video-caption">📷 Vite：法语词，作者尤雨溪，当下首选构建工具<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=738" target="_blank" rel="noopener">在 B 站中打开 (00:12:18)</a></p>
+</div>
+
+<h2 id="3-nodejs">3. 前置工作：安装 Node.js</h2>
+<p><em>(参考时间: 12:47)</em></p>
+<p>安装 Vite 之前还得做些前置工作，因为 Vite 自己也需要运行环境。Vite 本身是用 JavaScript 写的——不过它不是网页脚本，而是一个<strong>命令行工具</strong>，得在浏览器之外、我们自己的电脑上跑起来。</p>
+<p>谁来运行它？打个熟悉的比方：运行一个 Python 文件，得先装 Python；打开一个 Excel 文件，得先装 Excel。同理，想在浏览器之外运行 JavaScript 脚本或用 JS 写的工具，就得装一个叫做 <strong>Node.js</strong> 的东西。</p>
+<p><strong>Node.js 就是让 JavaScript 跳出浏览器、在我们自己电脑上直接运行的环境。</strong>装了它，Vite 这类 JS 命令行工具才能跑起来。</p>
+<h3 id="31">3.1 安装步骤</h3>
+<p><em>(参考时间: 14:00)</em></p>
+<p>打开 Node.js 官网 <strong>nodejs.org</strong>，点"获取 Node.js"进入下载页，页面上有安装两种方式：上面是命令行安装，下面是桌面安装包——<strong>建议普通用户直接用安装包</strong>，下载后一路"下一步"即可。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_09.png" alt="nodejs.org 下载页：命令行安装与桌面安装包两种入口" loading="lazy">
+  <p class="video-caption">📷 nodejs.org 下载页：命令行安装与桌面安装包两种入口<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=849" target="_blank" rel="noopener">在 B 站中打开 (00:14:09)</a></p>
+</div>
+
+<p>选包时先选操作系统，再选芯片架构：</p>
+<ul>
+<li><strong>Apple 芯片</strong>（M 系列，或近年的 A 系列）→ 选 <strong>ARM64</strong>；</li>
+<li><strong>Intel 芯片</strong>（早期 Mac 或 PC）→ 选 <strong>x64</strong>；</li>
+<li>Windows 同理：ARM 芯片选 ARM64，Intel 芯片选 x64。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_40.png" alt="按芯片架构选择安装包：ARM64 或 x64" loading="lazy">
+  <p class="video-caption">📷 按芯片架构选择安装包：ARM64 或 x64<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=880" target="_blank" rel="noopener">在 B 站中打开 (00:14:40)</a></p>
+</div>
+
+<p>如果是在 Linux（比如 Ubuntu）上装，也可以用 apt，跟之前装 nginx 一个路子；想不起来就直接问 AI。</p>
+<h3 id="32">3.2 验证安装</h3>
+<p><em>(参考时间: 15:26)</em></p>
+<p>装完后在终端确认：</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>-v<span class="w">    </span><span class="c1"># 输出 Node.js 版本号</span>
+npm<span class="w"> </span>-v<span class="w">     </span><span class="c1"># 输出 npm 版本号</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_15_36.png" alt="node -v 与 npm -v 各输出一个版本号，说明安装成功" loading="lazy">
+  <p class="video-caption">📷 node -v 与 npm -v 各输出一个版本号，说明安装成功<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=936" target="_blank" rel="noopener">在 B 站中打开 (00:15:36)</a></p>
+</div>
+
+<p>两个命令都有版本输出，说明 Node.js 装成功了。而且 Node <strong>一次装好，以后所有项目都能用</strong>，不用每个项目都装一遍。</p>
+<p>你可能注意到了：刚才顺手敲的 <code>npm -v</code>——npm 是哪来的？它是<strong>跟着 Node 一起装上的</strong>，不需要单独安装。这个 npm，就是我们接下来的主角之一。</p>
+<h2 id="4-npmjavascript">4. npm：JavaScript 的应用商店</h2>
+<p><em>(参考时间: 16:01)</em></p>
+<p>npm 可以先理解成<strong>一个 JavaScript 的应用商店</strong>。这个比喻你应该不陌生：在 Ubuntu 上我们用 apt——<code>apt install nginx</code>、<code>apt install git</code>——apt 就是应用商店，帮我们把现成的软件装进系统。npm 干的是同样的事，只不过它装的是各种现成的 <strong>JS 工具和库</strong>。待会儿要用的 Vite，就用 npm 来装。</p>
+<p>注意"先理解成"这个说法——因为 npm 其实<strong>还不止是个应用商店</strong>，它还有别的本事，本章后面会用到。</p>
+<h3 id="41-npm-apt">4.1 npm 与 apt 最重要的区别</h3>
+<p><em>(参考时间: 17:14)</em></p>
+<p>虽然都是应用商店，但有一个关键差异：<strong>apt 是给整台电脑装东西</strong>，装一个 nginx 全系统都能用，整台机器就这一份；而 <strong>npm 默认是给"当前这一个项目"装东西</strong>。</p>
+<p>也就是说：这个项目用 anime.js 的 4.4 版本，那个项目用 3.0 版本，两边各装各的、互不打架，每个项目自己管自己的一套。</p>
+<h3 id="42-npm-init-y">4.2 初始化：npm init -y</h3>
+<p><em>(参考时间: 17:56)</em></p>
+<p>正因为 npm 按项目管理，用它之前得先明确告诉它："这儿有一个项目需要用到 npm"——这个动作叫做<strong>初始化</strong>。</p>
+<p>在终端进入 zero2tech 项目的根目录，执行：</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>zero2tech
+npm<span class="w"> </span>init<span class="w"> </span>-y
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_19_07.png" alt="npm init -y 执行后，项目根目录多出 package.json" loading="lazy">
+  <p class="video-caption">📷 npm init -y 执行后，项目根目录多出 package.json<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1147" target="_blank" rel="noopener">在 B 站中打开 (00:19:07)</a></p>
+</div>
+
+<p>初始化完成后观察目录，会发现多出了一个文件：<strong>package.json</strong>。可以把它理解为这个项目的 <strong>npm 账本（档案）</strong>：以后 npm 给这个项目装了什么、项目能跑哪些命令，全都记在里面。</p>
+<h3 id="43-json">4.3 顺带认识 JSON 格式</h3>
+<p><em>(参考时间: 19:40)</em></p>
+<p>package.json 的后缀是 <code>.json</code>——这是我们课程里第一次见到这种格式。JSON 是一种承载数据的格式，语法很简单：</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"张三"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"age"</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"address"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"city"</span><span class="p">:</span><span class="w"> </span><span class="s2">"北京"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"zipcode"</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>最外面是一层大括号，里面是"名字: 值"组成的<strong>键值对</strong>，用冒号隔开：冒号前叫键，冒号后叫值；值还支持嵌套（比如上面的 address 又是一个大括号）。这种语法人一眼能读懂，也方便程序解析，所以大量程序都用它存数据、传数据。<strong>建议学一学</strong>，虽然本系列不要求写代码，但 JSON 学起来很快。</p>
+<p>有一个初学者最容易翻车的点——<strong>逗号规则</strong>：每一项结尾带一个逗号，但<strong>大括号里的最后一项不带逗号</strong>。比如上面 address 内的最后一项 zipcode 后面没有逗号；外层总共四项，address 是第四项，它的大括号后面也不带逗号。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_54.png" alt="JSON 逗号规则：非最后一项带逗号、最后一项不带" loading="lazy">
+  <p class="video-caption">📷 JSON 逗号规则：非最后一项带逗号、最后一项不带<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1254" target="_blank" rel="noopener">在 B 站中打开 (00:20:54)</a></p>
+</div>
+
+<h3 id="44-packagejson">4.4 package.json 里哪些字段要管</h3>
+<p><em>(参考时间: 21:48)</em></p>
+<p>回到刚才生成的 package.json，逐个字段看清楚哪些要管、哪些不要管。真正有价值的其实就两个：</p>
+<ul>
+<li><strong>name</strong>：项目名。默认取项目文件夹的名字（我们的项目叫 zero2tech，它就拿了这个）。可以理解，但对咱们的项目不关键；</li>
+<li><strong>version</strong>：项目自己的版本号，默认 <code>1.0.0</code>，想改随便改，不改也没事——同样不关键。</li>
+</ul>
+<p>剩下的一堆（description、main 等）要么是给将来要把项目<strong>发布成 npm 包</strong>的人准备的，要么只是默认占位，对咱们的项目全都用不上。package.json 就是一个普通配置文件，手动改、删都没问题，npm 不要求这些字段必须在。所以干脆删掉，只留三个字段，<strong>scripts 要留着</strong>（马上就有用）：</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"zero2tech"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_34.png" alt="精简后的 package.json：只保留 name、version、scripts" loading="lazy">
+  <p class="video-caption">📷 精简后的 package.json：只保留 name、version、scripts<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1414" target="_blank" rel="noopener">在 B 站中打开 (00:23:34)</a></p>
+</div>
+
+<p>注意 scripts 的大括号后面原本有个逗号——删掉后面的字段之后它成了最后一项，<strong>这个逗号也要跟着删掉</strong>，语法才合法，否则会报错。现在的 package.json 看起来空空如也，但等真用 npm 装东西时，npm 会往里记有用的账。</p>
+<h2 id="5-vite-npm">5. 安装 Vite，看懂 npm 记的账</h2>
+<p><em>(参考时间: 24:20)</em></p>
+<p>确认终端就在项目根目录，执行：</p>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>-D<span class="w"> </span>vite
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_24_41.png" alt="执行 npm install -D vite 安装 Vite" loading="lazy">
+  <p class="video-caption">📷 执行 npm install -D vite 安装 Vite<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1481" target="_blank" rel="noopener">在 B 站中打开 (00:24:41)</a></p>
+</div>
+
+<h3 id="51-d">5.1 <code>-D</code> 的含义：脚手架与砖</h3>
+<p><em>(参考时间: 24:53)</em></p>
+<p><code>-D</code> 的意思是：把 Vite 装成一个<strong>开发依赖</strong>（devDependency）。这要从 npm 装的东西的两类角色说起：</p>
+<div class="highlight"><pre><span></span><code>graph TD
+    P[npm install 装的包] --&gt; T["开发工具（脚手架）&lt;br/&gt;如 Vite：帮你把活干完&lt;br/&gt;但不会变成房子的一部分"]
+    P --&gt; L["运行时依赖（砖）&lt;br/&gt;如动画库：盖房子的材料&lt;br/&gt;跟着房子一起上线"]
+    T --&gt;|安装时加 -D| D1["记入 devDependencies"]
+    L --&gt;|安装时不加 -D| D2["记入 dependencies"]
+</code></pre></div>
+
+<ul>
+<li><strong>第一类是在项目里帮我们干活的工具</strong>。就像盖房用的脚手架：帮你把活干完，但它本身不会变成房子的一部分——最终上线的网站里没有 Vite。这种"脚手架"性质的，安装时就加 <code>-D</code>；</li>
+<li><strong>第二类是网站真正依赖的东西</strong>。比如动画库，那不是脚手架而是盖房子的砖，会构建进最终产物、跟着网站一起上线。这种就不加 <code>-D</code>（本讲最后会用到）。</li>
+</ul>
+<h3 id="52">5.2 装完之后，三处变化</h3>
+<p><em>(参考时间: 26:03)</em></p>
+<p>回车执行完，注意观察项目目录：</p>
+<ol>
+<li><strong>多出 <code>node_modules/</code> 目录</strong>——npm 装的所有东西都在这里：Vite 连同它所有依赖的一大包别的东西，全部下载堆在这里；</li>
+<li><strong>多出 <code>package-lock.json</code> 文件</strong>；</li>
+<li><strong>package.json 发生了变化</strong>：刚才精简到只剩三个字段，现在自动多出一段 <strong>devDependencies</strong>，里面记着一个 vite 和版本号——npm 自动帮我们记的账。</li>
+</ol>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_26_18.png" alt="安装后：新增 node_modules 与 package-lock.json，package.json 多出 devDependencies 段" loading="lazy">
+  <p class="video-caption">📷 安装后：新增 node_modules 与 package-lock.json，package.json 多出 devDependencies 段<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1578" target="_blank" rel="noopener">在 B 站中打开 (00:26:18)</a></p>
+</div>
+
+<p>关于 package-lock.json 的作用：把<strong>这次实际装的每个包的精确版本一笔一笔锁死</strong>，确保以后重新安装依赖时装出来的东西与现在一模一样。它记录了所有包的具体版本，不需要读懂，知道它干的是"锁版本"这件事就够了——还要了解一点：<strong>它最终是要提交到 Git 的</strong>。</p>
+<h3 id="53-vitenode_modules">5.3 只装了一个 Vite，node_modules 为什么这么大</h3>
+<p><em>(参考时间: 28:13)</em></p>
+<p>这个目录通常特别大、文件特别多，一般情况下不会去翻它，只要知道"npm 装的东西都在这里"就行。但从学习角度值得看一看：只装了一个 Vite，为什么下面有这么多东西？</p>
+<p>因为 <strong>Vite 自己也依赖别的包</strong>，别的包又依赖别的包，一层层牵连进来就一大串（比如 postcss 等），所有依赖都会装进 node_modules。可以用 <strong>npmgraphs.js.org</strong> 这类可视化网站，输入 vite 看它的依赖关系图：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_28_52.png" alt="npmgraph 上的 Vite 依赖图：依赖层层牵连" loading="lazy">
+  <p class="video-caption">📷 npmgraph 上的 Vite 依赖图：依赖层层牵连<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1732" target="_blank" rel="noopener">在 B 站中打开 (00:28:52)</a></p>
+</div>
+
+<p>图里能找到的每个包，npm 安装时都一并装进了 node_modules——这就是它这么大的原因。</p>
+<h3 id="54-vite">5.4 两个 "vite"，别搞混</h3>
+<p><em>(参考时间: 29:25)</em></p>
+<p>在 node_modules 里仔细找，会发现<strong>两个 vite</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_29_36.png" alt="node_modules 下的两个 vite：包目录与 .bin 里的可执行命令" loading="lazy">
+  <p class="video-caption">📷 node_modules 下的两个 vite：包目录与 .bin 里的可执行命令<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1776" target="_blank" rel="noopener">在 B 站中打开 (00:29:36)</a></p>
+</div>
+
+<ul>
+<li><code>node_modules/vite/</code>：一个<strong>文件夹</strong>，里面是 Vite 的代码本身（npm 拉下来的源码就在这）；</li>
+<li><code>node_modules/.bin/vite</code>：一个<strong>可执行命令</strong>（.bin = binary）。待会儿要"用 Vite"，用的就是这个命令。</li>
+</ul>
+<h2 id="6-vite">6. Vite 的三条核心命令</h2>
+<h3 id="61-vite">6.1 <code>vite</code>：开发预览与热更新</h3>
+<p><em>(参考时间: 30:37)</em></p>
+<p>因为命令在项目根目录下的 <code>node_modules/.bin/</code> 里，执行它：</p>
+<div class="highlight"><pre><span></span><code>node_modules/.bin/vite
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_30_44.png" alt="vite 当场在本地起了一个服务器，给出 localhost:5173 地址" loading="lazy">
+  <p class="video-caption">📷 vite 当场在本地起了一个服务器，给出 localhost:5173 地址<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1844" target="_blank" rel="noopener">在 B 站中打开 (00:30:44)</a></p>
+</div>
+
+<p>Vite 当场在本地起了一个服务器，给你一个地址：<code>http://localhost:5173</code>。这里的知识点：</p>
+<ul>
+<li><strong>http</strong>：协议，以前讲过；</li>
+<li><strong>localhost</strong>：看上去像个域名但长得不太一样——它代表的就是<strong>我们本地这台电脑</strong>。用 http 访问自己电脑上的 5173 端口；</li>
+<li><strong>5173</strong>：端口号。</li>
+</ul>
+<p>复制地址在浏览器打开——网站跑起来了，点导航在两个页面之间切换也都正常。<strong>尽管网站做过模块化改造，现在也不用发布到远程服务器，就在本地起一个服务预览</strong>，痛点一解决了一半。</p>
+<p>最爽的是热更新：现在就改一行代码试试。把 index.html 里的标题"关于我"改成"关于我自己"，保存（Command+S / Ctrl+S）——浏览器立马变了；再删掉两个字、再保存，又立马变了，<strong>连刷新都不用</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_32_20.png" alt="热更新：改代码保存后浏览器瞬间自动更新" loading="lazy">
+  <p class="video-caption">📷 热更新：改代码保存后浏览器瞬间自动更新<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=1940" target="_blank" rel="noopener">在 B 站中打开 (00:32:20)</a></p>
+</div>
+
+<p>这就是前面说的<strong>热更新</strong>。回看开头的痛点——上一节改点东西要看效果得 push、pull、刷新一整轮，现在改完一眨眼就看到，给开发工作提供了极大的便利。</p>
+<p>但 Vite 还不止这个。先把服务器停掉（Ctrl+C），停掉之后刚才的地址就访问不到了。不同终端下停止的方式：</p>
+<table>
+<thead>
+<tr>
+<th>环境</th>
+<th>停止命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS</td>
+<td>Ctrl + C</td>
+</tr>
+<tr>
+<td>Windows CMD</td>
+<td>Ctrl + C</td>
+</tr>
+<tr>
+<td>Windows PowerShell</td>
+<td>Ctrl + Shift + C</td>
+</tr>
+</tbody>
+</table>
+<p>这个"起本地服务器供开发时预览"的用途，叫做<strong>开发预览</strong>。</p>
+<h3 id="62-vite-build">6.2 <code>vite build</code>：构建（打包）</h3>
+<p><em>(参考时间: 33:37)</em></p>
+<p>到目前为止 Vite 还没做过它的本职——<strong>构建</strong>。构建也叫<strong>打包</strong>，英文 <strong>build</strong>。在命令后面加一个 build：</p>
+<div class="highlight"><pre><span></span><code>node_modules/.bin/vite<span class="w"> </span>build
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_13.png" alt="vite build 之后项目多出 dist 目录" loading="lazy">
+  <p class="video-caption">📷 vite build 之后项目多出 dist 目录<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2053" target="_blank" rel="noopener">在 B 站中打开 (00:34:13)</a></p>
+</div>
+
+<p>回车后目录发生变化：多出了一个 <strong>dist</strong> 文件夹（distribution，发行版）。打开看结构：里面有一个 index.html 和一个 <strong>assets</strong> 目录，assets 里是<strong>一个 CSS 文件和一个 JS 文件</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_44.png" alt="dist/assets：原来 8 个 CSS 合并成 1 个，多个 JS 模块合并成 1 个" loading="lazy">
+  <p class="video-caption">📷 dist/assets：原来 8 个 CSS 合并成 1 个，多个 JS 模块合并成 1 个<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2084" target="_blank" rel="noopener">在 B 站中打开 (00:34:44)</a></p>
+</div>
+
+<p>对比原来：CSS 有 8 个文件，现在只有 1 个；那几个 JS 模块也合并成了 1 个。<strong>构建这个动作就是把它们合并</strong>。合并之后，浏览器将来的请求数量从十几个减少到几个——痛点二解决。</p>
+<p>再看这两个文件名，名字后面各挂着一串"乱码"——有同学已经猜到：这就是解决浏览器缓存问题的。这串就是<strong>哈希（文件指纹）</strong>，根据文件内容自动算出来：内容只要一变，哈希就变，整个文件名就变；浏览器一看名字不一样，就不会再走缓存——<strong>痛点三也解决了</strong>，而且开发者再也不需要徒手给文件名加时间戳。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_35_15.png" alt="文件名后面的哈希指纹：内容一变指纹就变，规避缓存" loading="lazy">
+  <p class="video-caption">📷 文件名后面的哈希指纹：内容一变指纹就变，规避缓存<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2115" target="_blank" rel="noopener">在 B 站中打开 (00:35:15)</a></p>
+</div>
+
+<p><strong>一个小遗留：多入口。</strong>你可能注意到 dist 里只有 index.html，没有 textlab.html——我们明明有两个页面。这不是被"打包合并"了，而是 <strong>Vite 打包默认只认一个入口</strong>：项目根目录的 index.html。想让两个页面都进包，需要给 Vite 加配置。这节课不做这个配置：因为下一节就要把项目改造成 React，到那时两个页面会自然地合成一个入口，多入口的麻烦将不复存在，这个问题留到下一节。</p>
+<h3 id="63-vite-preview">6.3 <code>vite preview</code>：预览构建产物</h3>
+<p><em>(参考时间: 37:04)</em></p>
+<p>build 产物 dist 能不能在本地看看？<strong>注意：它仍然不能双击打开</strong>——打包后的文件引入 JS 时仍写着 <code>type="module"</code>，还是 ES 模块，本地 file:// 双击打不开。</p>
+<p>Vite 准备了第三条命令：</p>
+<div class="highlight"><pre><span></span><code>node_modules/.bin/vite<span class="w"> </span>preview
+</code></pre></div>
+
+<p>它专门起一个本地 web 服务，来提供 dist 这个文件夹的资源。注意端口是 <strong>4173</strong>（刚才开发预览是 5173，别混淆）：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_38_12.png" alt="vite preview 起服务，端口 4173，与 dev 的 5173 区分" loading="lazy">
+  <p class="video-caption">📷 vite preview 起服务，端口 4173，与 dev 的 5173 区分<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2292" target="_blank" rel="noopener">在 B 站中打开 (00:38:12)</a></p>
+</div>
+
+<p>这时再打开 DevTools 的 Network 刷新一下：请求明显变少了，只有一个 CSS（JS 还是两个——多出来的那个来自 CDN，本章最后一节处理）。请求干干净净，效果立竿见影。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_38_40.png" alt="preview 下的 Network：请求明显减少，仅剩一个 CSS" loading="lazy">
+  <p class="video-caption">📷 preview 下的 Network：请求明显减少，仅剩一个 CSS<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2320" target="_blank" rel="noopener">在 B 站中打开 (00:38:40)</a></p>
+</div>
+
+<h3 id="64">6.4 三条命令的分工</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>何时用</th>
+<th>跑的是什么</th>
+<th>端口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vite</code></td>
+<td>写代码时（开发预览）</td>
+<td>源码 + 热更新</td>
+<td>5173</td>
+</tr>
+<tr>
+<td><code>vite build</code></td>
+<td>准备上线时</td>
+<td>生成 dist（给生产服务器的版本）</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>vite preview</code></td>
+<td>build 之后</td>
+<td>本地预览 dist 产物</td>
+<td>4173</td>
+</tr>
+</tbody>
+</table>
+<p>命令很清晰，但你可能会感觉：<strong>这三条命令都太长、太啰嗦</strong>。谁来解决？马上登场。</p>
+<h2 id="7">7. 两份代码：源码与构建产物</h2>
+<p><em>(参考时间: 38:55)</em></p>
+<p>到这里，有一个重要概念必须建立起来：我们现在手上其实有<strong>两份东西</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_39_12.png" alt="两份代码：人维护的源码 vs 给浏览器的 dist 产物" loading="lazy">
+  <p class="video-caption">📷 两份代码：人维护的源码 vs 给浏览器的 dist 产物<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2352" target="_blank" rel="noopener">在 B 站中打开 (00:39:12)</a></p>
+</div>
+
+<div class="highlight"><pre><span></span><code>graph LR
+    A["源代码&lt;br/&gt;JS / CSS / index.html / README&lt;br/&gt;好读，给人看、给人改"] --&gt;|"vite build"| B["构建产物 dist&lt;br/&gt;文件少、已压缩、哈希文件名&lt;br/&gt;给浏览器用"]
+    B --&gt; C[生产服务器上线的就是这一份]
+</code></pre></div>
+
+<ul>
+<li><strong>一份是我们维护的代码（源代码）</strong>：原来那些 JS、CSS，包括 index.html、README——这些代码很好读，是给人看、给人改的；</li>
+<li><strong>另一份是真正上线跑的（dist）</strong>：文件很少、内容被压缩过（打开看，连换行符都没有）、文件名带哈希——是给浏览器用的，不是给人读写的。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_40_06.png" alt="dist 里的代码被压缩成一整行，连换行符都没有" loading="lazy">
+  <p class="video-caption">📷 dist 里的代码被压缩成一整行，连换行符都没有<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2406" target="_blank" rel="noopener">在 B 站中打开 (00:40:06)</a></p>
+</div>
+
+<p>Vite 作为构建工具干的事，就是把"方便人看、方便人写"的代码文件，转换成"适合浏览器"的文件。<strong>每次构建，dist 都会被重新生成一遍。</strong>由此得出两条铁律：</p>
+<ol>
+<li><strong>千万别手动改 dist 里的文件</strong>——包括将来让 AI 写代码也一样：<strong>写的永远应该是源码</strong>。改了 dist 也是白改，下一次 build 就被整个覆盖了；</li>
+<li><strong>dist 才是真正要送上线的那一份</strong>。</li>
+</ol>
+<h2 id="8-scripts-npm-run">8. scripts 与 npm run：给命令起短名</h2>
+<p><em>(参考时间: 42:22)</em></p>
+<p>刚才说三条命令太长——谁能解决？还记得 package.json 里我们特意留下的 <strong>scripts</strong> 吗？它可以把常用命令<strong>登记成简短命令</strong>。配置三个：</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"zero2tech"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0.0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"dev"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite build"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"preview"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vite preview"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_43_11.png" alt="在 package.json 的 scripts 中登记 dev / build / preview 三条短命令" loading="lazy">
+  <p class="video-caption">📷 在 package.json 的 scripts 中登记 dev / build / preview 三条短命令<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2591" target="_blank" rel="noopener">在 B 站中打开 (00:43:11)</a></p>
+</div>
+
+<p>之后就可以这样执行（前缀都是 <code>npm run</code>，后面接登记的名字）：</p>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>dev<span class="w">       </span><span class="c1"># 等价于 vite（5173，开发预览）</span>
+npm<span class="w"> </span>run<span class="w"> </span>build<span class="w">     </span><span class="c1"># 等价于 vite build</span>
+npm<span class="w"> </span>run<span class="w"> </span>preview<span class="w">   </span><span class="c1"># 等价于 vite preview（4173）</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_44_10.png" alt="npm run preview：短命令与长命令效果一模一样" loading="lazy">
+  <p class="video-caption">📷 npm run preview：短命令与长命令效果一模一样<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2650" target="_blank" rel="noopener">在 B 站中打开 (00:44:10)</a></p>
+</div>
+
+<p>效果与刚才一字不差，是不是好记多了？还记得开头说 npm "先理解成应用商店"——此刻它就露出了另一面：<strong>通过 package.json，它还能在一定程度上帮我们管理项目</strong>。</p>
+<h3 id="81">8.1 命令名是约定，不是规定</h3>
+<p><em>(参考时间: 44:47)</em></p>
+<p>为什么叫 dev、build、preview？这是<strong>约定俗成</strong>，不是规定死的——你真不想用，改成拼音"开发"也照样能跑。但没必要：<strong>有约定就按约定来</strong>，别人怎么写咱怎么写，自己容易理解、找资料容易；更关键的是，将来让 AI 帮你管理代码时，它见过的代码这里写的都是 dev，协作才顺畅。这三个名字建议不要改，别给自己找麻烦。</p>
+<h3 id="82-npm-run">8.2 npm run 的执行逻辑</h3>
+<p><em>(参考时间: 45:48)</em></p>
+<p><code>npm run</code> 的逻辑非常简单：<strong>帮你执行登记的那条命令而已</strong>。你甚至可以让它跑电脑上的其他命令——比如在 scripts 里再配一个 <code>"hello": "ls"</code>，<code>npm run hello</code> 就会把当前目录的文件列出来；配 <code>"git --version"</code> 也一样，会打出 Git 的版本号。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_46_44.png" alt="npm run 也能执行系统命令：hello 配置成 ls / git --version 的演示" loading="lazy">
+  <p class="video-caption">📷 npm run 也能执行系统命令：hello 配置成 ls / git --version 的演示<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2804" target="_blank" rel="noopener">在 B 站中打开 (00:46:44)</a></p>
+</div>
+
+<p>执行命令时的查找顺序：</p>
+<div class="highlight"><pre><span></span><code>graph TD
+    A[npm run 某命令] --&gt; B{node_modules/.bin 里有吗?}
+    B --&gt;|有| C[优先使用 .bin 里的命令&lt;br/&gt;所以裸写 vite 找得到]
+    B --&gt;|没有| D[退回系统命令里找&lt;br/&gt;如 ls、git]
+</code></pre></div>
+
+<p>所以 scripts 里能直接写 <code>vite</code> 而不是 <code>node_modules/.bin/vite</code>——npm run 会优先去 node_modules/.bin 里找，找不到才去系统命令里找。演示用的 hello 配置记得删掉。</p>
+<h2 id="9-git">9. Git 该提交什么、忽略什么</h2>
+<p><em>(参考时间: 48:00)</em></p>
+<p>现在项目里多出来好几个文件和文件夹，提交代码时要不要带上？<strong>有说法</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>文件/目录</th>
+<th>是否提交 Git</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>package.json</code></td>
+<td>✅ 提交</td>
+<td>项目配置（账本）</td>
+</tr>
+<tr>
+<td><code>package-lock.json</code></td>
+<td>✅ 提交</td>
+<td>项目配置，锁定版本</td>
+</tr>
+<tr>
+<td><code>node_modules/</code></td>
+<td>❌ 不提交</td>
+<td>用 <code>npm install</code> 随时可重新生成</td>
+</tr>
+<tr>
+<td><code>dist/</code></td>
+<td>❌ 不提交</td>
+<td>用 <code>vite build</code> 随时可重新生成</td>
+</tr>
+</tbody>
+</table>
+<p>node_modules 照着 package.json（或 lock 文件）跑一次 <code>npm install</code> 就能原样装回来；dist 照着源码跑一次 build 就能构建出来。<strong>既然随时能重建，塞进 Git 就是白白占地方</strong>，还会拖慢远程同步的速度。</p>
+<p>用 <strong>.gitignore</strong> 把这两个排除掉——在 .gitignore 里写上 <code>node_modules</code> 和 <code>dist</code> 两行，保存：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_49_36.png" alt=".gitignore 里写入 node_modules 与 dist" loading="lazy">
+  <p class="video-caption">📷 .gitignore 里写入 node_modules 与 dist<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=2976" target="_blank" rel="noopener">在 B 站中打开 (00:49:36)</a></p>
+</div>
+
+<p>这两个目录的颜色立刻从绿色（未跟踪）变成灰色——git 已经不管它们了，以后随便怎么变都只发生在本地。</p>
+<p>至于 dist 到底怎么送上线，后面讲现代前端部署的章节会细说。</p>
+<h2 id="10-animejs-cdn">10. 收尾实战：把 anime.js 从 CDN 收编到本地</h2>
+<p><em>(参考时间: 50:10)</em></p>
+<p>课程最后还剩一个小尾巴。打开动画相关的 JS 文件（cards.js）：anime.js 现在<strong>还是从一个 CDN 网址在拉</strong>。上一节已经讲过这种写法也能跑，但总觉得不踏实，有三个隐患：</p>
+<ol>
+<li><strong>多一次请求、拖慢页面</strong>：每次打开页面都要联网去人家服务器拉一份 anime 的代码。还记得 <code>npm run preview</code> 的 Network 面板吗？打包好的产物只有一个 JS，下面却多出来一条对 CDN 地址的请求；看时间线，自己的代码 8~10 毫秒就加载完了，这一个 600 多毫秒；</li>
+<li><strong>别人网站挂了就全挂</strong>：万一哪天 CDN 站点宕机，我们的动画就废了；</li>
+<li><strong>版本不可控</strong>：保不齐哪天对方小版本一更新（比如 <code>anime@4</code> 的某个小版本），我们的页面毫无征兆地变了。</li>
+</ol>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_51_20.png" alt="CDN 引入的 anime.js：单条请求耗时 600+ ms，自家代码仅 10ms 上下" loading="lazy">
+  <p class="video-caption">📷 CDN 引入的 anime.js：单条请求耗时 600+ ms，自家代码仅 10ms 上下<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=3080" target="_blank" rel="noopener">在 B 站中打开 (00:51:20)</a></p>
+</div>
+
+<p>既然现在有了 npm，能把库装到本地、还能锁版本，anime.js 就没必要再拴在别人网站上了。</p>
+<h3 id="101-d">10.1 安装（不带 -D）</h3>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>animejs
+</code></pre></div>
+
+<p>注意这条命令与装 Vite 的那条几乎一样，但<strong>关键区别是不带 <code>-D</code></strong>——因为这次装的是"砖"，不是"脚手架"。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_52_26.png" alt="npm install animejs（不带 -D）" loading="lazy">
+  <p class="video-caption">📷 npm install animejs（不带 -D）<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=3146" target="_blank" rel="noopener">在 B 站中打开 (00:52:26)</a></p>
+</div>
+
+<p>装完观察两处：node_modules 下已经有了 animejs；再看 package.json，<strong>它的记账位置不一样</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_53_20.png" alt="package.json 中 animejs 记在 dependencies，vite 记在 devDependencies" loading="lazy">
+  <p class="video-caption">📷 package.json 中 animejs 记在 dependencies，vite 记在 devDependencies<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=3200" target="_blank" rel="noopener">在 B 站中打开 (00:53:20)</a></p>
+</div>
+
+<ul>
+<li><strong>animejs → dependencies</strong>：网站的砖，会被构建进最终产物、跟着上线，网站运行时真的在用它；</li>
+<li><strong>vite → devDependencies</strong>：脚手架，盖完房子就撤，上线的站点里没有它。</li>
+</ul>
+<p>两者虽然都用 npm 装、命令长得像，但在项目里扮演的角色完完全全不一样——这就是本节刻意把两次安装隔了大半节课的原因。</p>
+<h3 id="102-cdn-import">10.2 关键一步：改掉 CDN 的 import</h3>
+<p>光装上来还不算用上。回到代码，把那串很长的 CDN 网址换成一个干净的名字——<strong>裸包名</strong>：</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nx">anime</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"animejs"</span><span class="p">;</span>
+</code></pre></div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_54_56.png" alt="把 import 的 CDN 网址改成裸包名" loading="lazy">
+  <p class="video-caption">📷 把 import 的 CDN 网址改成裸包名<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=3296" target="_blank" rel="noopener">在 B 站中打开 (00:54:56)</a></p>
+</div>
+
+<p>这种"光秃秃"的名字，以前浏览器是不认的；但 <strong>Vite 会在背后帮你把它翻译成 node_modules 里对应安装的库</strong>。这一步千万不要漏：你不能只 <code>npm install</code> 却不改 import——不改的话用的还是 CDN 那一份，<strong>装到本地等于白装</strong>。</p>
+<h3 id="103">10.3 验证</h3>
+<p>再构建、再预览：</p>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>build
+npm<span class="w"> </span>run<span class="w"> </span>preview<span class="w">   </span><span class="c1"># 4173</span>
+</code></pre></div>
+
+<p>build 前先盯着 dist 里的文件名——<strong>build 之后文件名（哈希）变了</strong>：说明 anime.js 已经打进产物，现在用的不再是 CDN 的那份，而是 node_modules 里的这份。再刷新 preview 的 Network：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_56_45.png" alt="最终效果：一个 HTML、一个 JS、一个 CSS，请求彻底干净" loading="lazy">
+  <p class="video-caption">📷 最终效果：一个 HTML、一个 JS、一个 CSS，请求彻底干净<br><a href="https://www.bilibili.com/video/BV1k3JA6cEAt/?t=3405" target="_blank" rel="noopener">在 B 站中打开 (00:56:45)</a></p>
+</div>
+
+<p><strong>一个 HTML、一个 JS、一个 CSS</strong>——请求干干净净。本讲到此完整收官。</p>
+<h2 id="_2">小结</h2>
+<p><em>(参考时间: 57:28)</em></p>
+<p>把 4.1 与 4.2 两节放在一起盘：</p>
+<ul>
+<li><strong>4.1 模块化</strong>：治好了代码顺序混乱、全局污染这些坑，让代码变得更现代；</li>
+<li><strong>4.2 构建</strong>：请来了 Vite（以及支撑它的 Node.js 与 npm），把<strong>开发预览不便、请求太多加载太慢、浏览器缓存</strong>这三个问题一次全解决，最后还顺手把 anime.js 收进本地、甩掉了 CDN。</li>
+</ul>
+<div class="highlight"><pre><span></span><code>graph LR
+    A["4.1 模块化&lt;br/&gt;代码变现代"] --&gt; B["4.2 构建工具链&lt;br/&gt;Vite + npm + Node"]
+    B --&gt; C["工程化地基铺平"]
+    C --&gt; D["下一节：React&lt;br/&gt;顺带聊聊 Vue"]
+</code></pre></div>
+
+<p>工程化这套地基到这儿就铺平了。有了地基，接下来的事情就有意思了——<strong>下一节讲 React，顺便聊一下 Vue</strong>。</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
