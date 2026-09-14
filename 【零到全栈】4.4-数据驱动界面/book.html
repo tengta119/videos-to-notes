@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【零到全栈】4.4 数据驱动界面</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="44">【零到全栈】4.4 数据驱动界面</h1>
+<blockquote>
+<p>视频来源：<a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ">Bilibili</a><br />
+配套代码：<a href="https://github.com/joylibo/zero-to-tech-demos/tree/main/zero-to-tech-4-4"><code>zero-to-tech-demos/zero-to-tech-4-4</code></a></p>
+</blockquote>
+<h2 id="_1">从“操作页面”到“改变数据”</h2>
+<p><em>(参考时间: 00:01)</em></p>
+<p>上一节把项目从 Vanilla JavaScript 改造成 React 后，页面已经由组件搭建完成。本节进一步建立一个核心心智模型：<strong>界面不是被逐行命令式修改出来的，而是由数据决定的结果。</strong></p>
+<p>当某个值变化时，React 会让依赖这个值的界面呈现对应的新状态。开发者不需要手工寻找 DOM 节点、再命令它改文字或隐藏元素。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    D[数据或状态] --&gt; R[React 组件]
+    R --&gt; U[界面呈现]
+    A[用户操作] --&gt; D
+    X[URL 参数] --&gt; D
+</code></pre>
+
+<p>课程用已有的两个组件说明这一点：</p>
+<ul>
+<li><code>PageHeading</code> 接收标题和副标题等外部值，收到什么就显示什么。</li>
+<li><code>App</code> 保存“当前页面”这个值，例如 <code>home</code> 或 <code>text-lab</code>，并据此决定渲染哪个页面组件。</li>
+</ul>
+<p>所以，数据驱动界面要回答的不是“怎样改这个标签”，而是：<strong>这个值放在哪里、谁可以改变它、改变后界面如何响应？</strong>本节介绍三种常用答案。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_03_14.png" alt="React 页面由组件和当前数据共同决定" loading="lazy">
+  <p class="video-caption">📷 React 页面由组件和当前数据共同决定<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=194" target="_blank" rel="noopener">在 B 站中打开 (00:03:14)</a></p>
+</div>
+
+<h2 id="_2">方案一：把内容数据从组件中抽离</h2>
+<p><em>(参考时间: 03:39)</em></p>
+<h3 id="_3">为什么内容不应散落在组件结构中</h3>
+<p>如果 <code>HomePage.jsx</code> 同时包含页面结构、样式意图和所有文案，修改“关于我”这样的标题也必须在大量 JSX 结构中查找文本。这会让频繁变化的内容与相对稳定的界面结构耦合在一起。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_19.png" alt="在 HomePage 结构中直接查找“关于我”文案" loading="lazy">
+  <p class="video-caption">📷 在 HomePage 结构中直接查找“关于我”文案<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=259" target="_blank" rel="noopener">在 B 站中打开 (00:04:19)</a></p>
+</div>
+
+<p>更合适的分工是建立一份内容表，例如 <code>src/data/site.js</code>：</p>
+<pre class="highlight"><code class="language-js">export const site = {
+  home: {
+    heroTitle: '关于我',
+    heroSubtitle: '...'
+  }
+}
+</code></pre>
+
+<p>该文件是 JavaScript 模块，不是 JSON。两者外形接近，但 JavaScript 对象的最后一项可以保留尾随逗号，且可以导出、组合其他值。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_13.png" alt="site.js 中集中定义网站标题等内容" loading="lazy">
+  <p class="video-caption">📷 site.js 中集中定义网站标题等内容<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=553" target="_blank" rel="noopener">在 B 站中打开 (00:09:13)</a></p>
+</div>
+
+<p>组件只读取字段并负责排版：</p>
+<pre class="highlight"><code class="language-jsx">import { site } from '../data/site.js'
+
+export default function HomePage() {
+  return &lt;PageHeading title={site.home.heroTitle} /&gt;
+}
+</code></pre>
+
+<p>这样，<code>HomePage</code>、<code>App</code> 和 <code>PageHeading</code> 都无需因“关于我”改成“你好世界”而修改；保存 <code>site.js</code> 后，开发服务器会立即呈现新值。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_54.png" alt="编辑 site.js 后页面标题即时更新" loading="lazy">
+  <p class="video-caption">📷 编辑 site.js 后页面标题即时更新<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=594" target="_blank" rel="noopener">在 B 站中打开 (00:09:54)</a></p>
+</div>
+
+<h3 id="_4">这种分离带来的收益</h3>
+<ul>
+<li><strong>内容集中管理</strong>：改文案、补作品卡片等操作集中在内容表中完成。</li>
+<li><strong>界面更稳定</strong>：组件专注布局、样式和结构，不关心具体文案。</li>
+<li><strong>便于国际化</strong>：准备中文、英文或法语内容表，再依据语言选择读取来源，无需复制页面结构。</li>
+<li><strong>为后端数据做准备</strong>：当前数据写在本地文件，之后可以替换为 API 返回的数据，组件的呈现职责不变。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_26.png" alt="内容表与组件各自负责的边界" loading="lazy">
+  <p class="video-caption">📷 内容表与组件各自负责的边界<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=626" target="_blank" rel="noopener">在 B 站中打开 (00:10:26)</a></p>
+</div>
+
+<h2 id="state">方案二：用 State 表示会变化的界面数据</h2>
+<p><em>(参考时间: 12:12)</em></p>
+<p>内容表中的值由开发者改文件才会变化，但用户交互也会不断产生新数据。例如在文字实验室输入文本后，页面要实时显示“已输入 N 字”。这类会变化、变化后需重新渲染的值，在 React 中称为 <strong>state（状态）</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    participant User as 用户
+    participant Input as 输入框
+    participant State as 组件 State
+    participant UI as 字数显示
+    User-&gt;&gt;Input: 输入或删除文字
+    Input-&gt;&gt;State: 更新 text
+    State-&gt;&gt;UI: 重新计算并渲染字数
+</code></pre>
+
+<p>一个典型组件使用 <code>useState</code> 保存输入内容：</p>
+<pre class="highlight"><code class="language-jsx">import { useState } from 'react'
+
+function InputCard() {
+  const [text, setText] = useState('')
+  return (
+    &lt;&gt;
+      &lt;textarea value={text} onChange={(e) =&gt; setText(e.target.value)} /&gt;
+      &lt;p&gt;已输入 {text.length} 字&lt;/p&gt;
+    &lt;/&gt;
+  )
+}
+</code></pre>
+
+<p><code>text</code> 是当前值，<code>setText</code> 是更新它的唯一入口。用户打字触发 <code>onChange</code>，状态更新，React 随即重新执行组件并让字数显示跟随变化。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_13_42.png" alt="文字实验室中输入内容，字数同步变化" loading="lazy">
+  <p class="video-caption">📷 文字实验室中输入内容，字数同步变化<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=822" target="_blank" rel="noopener">在 B 站中打开 (00:13:42)</a></p>
+</div>
+
+<h3 id="state_1">State 的边界：刷新后会丢失</h3>
+<p>state 只存在于当前页面运行期间。刷新浏览器、关闭页面或直接把地址发给别人时，内存中的状态不会自动保留。</p>
+<p>这也是上一节用 <code>App</code> 内部 state 管理页面切换的局限：进入文字实验室后刷新，页面又回到默认首页；复制地址给别人，也无法让对方直接进入当前页面。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_20.png" alt="仅用 state 管理页面时，刷新后回到默认首页" loading="lazy">
+  <p class="video-caption">📷 仅用 state 管理页面时，刷新后回到默认首页<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1040" target="_blank" rel="noopener">在 B 站中打开 (00:17:20)</a></p>
+</div>
+
+<p>因此，适合 state 的是输入内容、弹窗开关、当前选中项等短期交互值；需要刷新后保留、可分享、可前进后退的页面位置，则应交给 URL。</p>
+<h2 id="url">方案三：把路由状态写入 URL</h2>
+<p><em>(参考时间: 18:17)</em></p>
+<p>路由也是数据驱动界面：只不过“当前显示哪一页”这个数据不再只放在 <code>App</code> 的 state 中，而是编码在浏览器 URL 的路径里。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    N[用户点击导航] --&gt; W[router 写入 URL 路径]
+    W --&gt; H[history 产生历史记录]
+    H --&gt; R[App 读取当前路径]
+    R --&gt; P{路径是什么?}
+    P --&gt;|/| Home[渲染 HomePage]
+    P --&gt;|/text-lab| Lab[渲染 TextLabPage]
+</code></pre>
+
+<p>示例项目在 <code>src/router/useRoute.js</code> 中实现了一个轻量路由工具。它负责读取当前地址，并在点击导航时更新 URL。<code>App.jsx</code> 根据该路径选择页面。</p>
+<pre class="highlight"><code class="language-js">// 路由值的含义示例
+'/'          // 个人主页
+'/text-lab'  // 文字实验室
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_18_52.png" alt="切换导航时地址栏路径同步变化" loading="lazy">
+  <p class="video-caption">📷 切换导航时地址栏路径同步变化<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1132" target="_blank" rel="noopener">在 B 站中打开 (00:18:52)</a></p>
+</div>
+
+<p>把路由放进 URL 后获得三个关键行为：</p>
+<ol>
+<li>在 <code>/text-lab</code> 刷新仍停留在文字实验室。</li>
+<li>浏览器前进、后退可以恢复之前的页面位置。</li>
+<li>把当前地址发给其他人，对方打开的是同一个页面。</li>
+</ol>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_19_00.png" alt="文字实验室路径刷新后仍能恢复页面" loading="lazy">
+  <p class="video-caption">📷 文字实验室路径刷新后仍能恢复页面<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1140" target="_blank" rel="noopener">在 B 站中打开 (00:19:00)</a></p>
+</div>
+
+<p>课程中的 <code>useRoute.js</code> 是为了理解原理而手写的最小实现。真实的成熟 React 项目通常直接使用 React Router；后续的 Next.js 也提供了内建的路由方案。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_00.png" alt="router 文件负责在导航时修改 URL" loading="lazy">
+  <p class="video-caption">📷 router 文件负责在导航时修改 URL<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1200" target="_blank" rel="noopener">在 B 站中打开 (00:20:00)</a></p>
+</div>
+
+<h2 id="43">将 4.3 项目迁移到本节结构</h2>
+<p><em>(参考时间: 22:18)</em></p>
+<p>本节 demo 是 4.3 项目的演进版。迁移时不必重建项目，只需把内容表和小路由加入现有目录，并用 demo 中的版本覆盖相关页面组件。</p>
+<h3 id="_5">新增文件</h3>
+<pre class="highlight"><code class="language-text">src/
+├─ data/
+│  └─ site.js
+└─ router/
+   └─ useRoute.js
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_05.png" alt="新建 data 目录并复制 site.js" loading="lazy">
+  <p class="video-caption">📷 新建 data 目录并复制 site.js<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1385" target="_blank" rel="noopener">在 B 站中打开 (00:23:05)</a></p>
+</div>
+
+<h3 id="_6">覆盖的已有文件</h3>
+<pre class="highlight"><code class="language-text">src/App.jsx
+src/components/HomePage.jsx
+src/components/TextLabPage.jsx
+src/components/InputCard.jsx
+src/css/lab.css
+</code></pre>
+
+<p>迁移完成后启动开发服务器：</p>
+<pre class="highlight"><code class="language-bash">npm run dev
+</code></pre>
+
+<p>按以下顺序验收：</p>
+<ul>
+<li>点击导航，地址栏在 <code>/</code> 与 <code>/text-lab</code> 之间切换；刷新 <code>/text-lab</code> 后仍在该页。</li>
+<li>在输入框键入内容，“已输入 N 字”会立即更新。</li>
+<li>改 <code>src/data/site.js</code> 的 <code>heroTitle</code> 并保存，页面大标题即时改变。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_24_37.png" alt="覆盖页面组件与样式文件后的项目结构" loading="lazy">
+  <p class="video-caption">📷 覆盖页面组件与样式文件后的项目结构<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1477" target="_blank" rel="noopener">在 B 站中打开 (00:24:37)</a></p>
+</div>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_27_49.png" alt="迁移完成后验证字数、路由和内容表更新" loading="lazy">
+  <p class="video-caption">📷 迁移完成后验证字数、路由和内容表更新<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=1669" target="_blank" rel="noopener">在 B 站中打开 (00:27:49)</a></p>
+</div>
+
+<h2 id="vite-react">Vite + React 项目的部署流程</h2>
+<p><em>(参考时间: 28:55)</em></p>
+<p>从 Vanilla 项目切换到 Vite + React 后，服务器不能再把源码目录直接交给 Nginx。浏览器不认识 JSX 和框架源码，必须先在服务器上构建。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    L[本地修改源码] --&gt; G[git push]
+    G --&gt; S[服务器 git pull]
+    S --&gt; I[npm install
+依赖变更时执行]
+    I --&gt; B[npm run build]
+    B --&gt; D[dist/ 静态产物]
+    D --&gt; N[Nginx root 指向 dist/]
+    N --&gt; U[用户浏览器]
+</code></pre>
+
+<h3 id="_7">首次部署或依赖变更时</h3>
+<ol>
+<li>本地提交并推送源码。</li>
+<li>服务器进入项目目录后拉取代码。</li>
+<li>安装 Node.js，并执行 <code>npm install</code> 根据 <code>package.json</code> 安装依赖。</li>
+<li>执行 <code>npm run build</code>，生成 <code>dist/</code>。</li>
+<li>让 Nginx 的 <code>root</code> 指向项目的 <code>dist/</code> 目录。</li>
+</ol>
+<pre class="highlight"><code class="language-bash">npm install
+npm run build
+sudo nginx -t
+sudo systemctl reload nginx
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_33_32.png" alt="服务器执行 npm run build 后生成 dist 目录" loading="lazy">
+  <p class="video-caption">📷 服务器执行 npm run build 后生成 dist 目录<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=2012" target="_blank" rel="noopener">在 B 站中打开 (00:33:32)</a></p>
+</div>
+
+<p><code>dist/</code> 是构建产物，通常被 <code>.gitignore</code> 排除：Git 仓库提交的是源码，服务器拉取源码后自行构建。后续如果只改文案、<code>package.json</code> 没变，可以跳过 <code>npm install</code>，但仍要重新执行 <code>npm run build</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_41.png" alt="将 Nginx 的 root 从源码目录改为 dist 目录" loading="lazy">
+  <p class="video-caption">📷 将 Nginx 的 root 从源码目录改为 dist 目录<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=2081" target="_blank" rel="noopener">在 B 站中打开 (00:34:41)</a></p>
+</div>
+
+<h3 id="_8">单页应用部署的遗留问题</h3>
+<p>本节通过 URL 路由实现了 <code>/text-lab</code>，本地 Vite 开发服务器刷新该路径没有问题；但直接使用静态 Nginx 部署时，刷新深层路径可能收到 404。这是单页应用（SPA）常见的服务器回退配置问题。</p>
+<p>课程暂不在本节展开，而是在下一节引出 Next.js。核心结论是：开发环境能处理前端路由，不代表生产服务器已经知道如何把任意路径回退到应用入口。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_38_08.png" alt="线上刷新 text-lab 路径暴露 SPA 路由部署问题" loading="lazy">
+  <p class="video-caption">📷 线上刷新 text-lab 路径暴露 SPA 路由部署问题<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=2288" target="_blank" rel="noopener">在 B 站中打开 (00:38:08)</a></p>
+</div>
+
+<h2 id="_9">本节回顾</h2>
+<p><em>(参考时间: 39:48)</em></p>
+<p>数据驱动界面有三种主要落点：</p>
+<table>
+<thead>
+<tr>
+<th>数据位置</th>
+<th>适用场景</th>
+<th>代表例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>内容表</td>
+<td>稳定、集中维护的展示内容</td>
+<td><code>src/data/site.js</code></td>
+</tr>
+<tr>
+<td>组件 state</td>
+<td>用户交互期间不断变化的短期值</td>
+<td>输入框文本、字数</td>
+</tr>
+<tr>
+<td>URL</td>
+<td>需要刷新保留、可分享、支持前进后退的页面状态</td>
+<td><code>/text-lab</code> 路由</td>
+</tr>
+</tbody>
+</table>
+<p>对于 React 项目部署，服务器的职责也随之变化：不直接服务源码目录，而是安装依赖、构建 <code>dist/</code>，再由 Nginx 服务构建产物。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_40_00.png" alt="三种数据位置与部署流程总结" loading="lazy">
+  <p class="video-caption">📷 三种数据位置与部署流程总结<br><a href="https://www.bilibili.com/video/BV1Dg7H6oEHQ?t=2400" target="_blank" rel="noopener">在 B 站中打开 (00:40:00)</a></p>
+</div>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
