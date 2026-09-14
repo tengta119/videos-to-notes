@@ -168,11 +168,11 @@ python -m http.server 8080 --directory output/<video_id>
 
 ### 第六步（可选）：发布成品到 pages 分支
 
-`ash
+```bash
 python src/publish.py <video_id>   # 或 python src/publish.py --all
-git push origin pages
-`
+git push mine pages
+```
 
-- 将 book.html / book.md / images/ 以及（若存在）transcript.corrected.txt（AI 修正版字幕对照稿）提交到独立 orphan 分支 `pages`，目录名 = 视频标题；落地页卡片对含对照稿的书自动附"字幕对照"入口；不触碰 `output/` 与 main 工作区；内容无变化时自动跳过提交。
+- 将 book.html / book.md / images/ 以及（若存在）transcript.corrected.txt（AI 修正版字幕对照稿）提交到独立分支 `pages`（远程名 `mine`，见 DEPLOY.md），目录名 = 视频标题；落地页卡片对含对照稿的书自动附"字幕对照"入口；不触碰 `output/` 与 main 工作区；内容无变化时自动跳过提交。
 - 纯本地 git 操作，沙箱内可跑；push 需网络。
 - 首次推送后需在 GitHub 仓库 Settings → Pages 一次性启用（分支 `pages`、目录 `/ (root)`），之后每次 push 自动部署。

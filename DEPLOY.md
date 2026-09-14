@@ -40,8 +40,8 @@ git push mine main
 - 若报网络错误（如 `schannel: server closed abruptly`），先给 git 挂代理再推：
 
   ```bash
-  git config --global http.proxy  http://127.0.0.1:7890
-  git config --global https.proxy http://127.0.0.1:7890
+  git config --global http.proxy  http://127.0.0.1:7897
+  git config --global https.proxy http://127.0.0.1:7897
   ```
 
   端口按你的代理客户端实际修改；不想全局设置可把 `--global` 换成 `--local`（仅当前仓库生效）。
