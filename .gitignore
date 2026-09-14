@@ -31,3 +31,9 @@ memory/
 # exported cookies (never commit login state)
 cookies.txt
 *.cookies.txt
+
+# AMD ASR backend (prebuilt whisper-cli binary + GGML models, large)
+tools/
+
+# scratch
+tmp/

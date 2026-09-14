@@ -38,7 +38,8 @@ python src/asr_transcript.py <video_id>
 - 脚本自行完成：只下载音频轨（`output/<id>/audio.m4a`，不下载视频流）→ faster-whisper `large-v3` 转写 → 按标点/时长切成接近平台字幕粒度的短段 → 写出 `transcript.json`（字段与 `scraper.get_transcript` 完全同构：`video_url / title / video_id / duration / chapters / segments`）与 `transcript.txt`。因此第二步之后的所有步骤无需任何改动。
 - **先试跑再全量**：`--sample-start 900 --sample-dur 180` 转写 3 分钟抽样，确认质量与速度后再跑全量。
 - **领域术语提示**：在 `output/<id>/_asr_prompt.txt` 写入本讲主题与术语（一两百字即可，Whisper 的 prompt 上限约 224 token，过长会被截断）。它能显著压制同音错词，并让中文输出自带标点。**PowerShell 下不要用命令行传含中文引号的长 prompt**（弯引号会被当成字符串定界符），一律走文件。
-- **算力**：有 NVIDIA 显卡自动用 CUDA，显存 ≤4GB 用 `--compute-type int8_float16`；无卡自动退 CPU int8。Windows 报 `Library cublas64_12.dll is not found` 时装 `nvidia-cublas-cu12 nvidia-cudnn-cu12`，脚本已自动注册这些 DLL 目录。
+- **算力（NVIDIA）**：有 NVIDIA 显卡自动用 CUDA，显存 ≤4GB 用 `--compute-type int8_float16`；无卡自动退 CPU int8。Windows 报 `Library cublas64_12.dll is not found` 时装 `nvidia-cublas-cu12 nvidia-cudnn-cu12`，脚本已自动注册这些 DLL 目录。
+- **算力（AMD 显卡，如 RX 9070 XT / RDNA4）**：faster-whisper 不支持 AMD，脚本自动切换到 whisper.cpp (ROCm) 后端。一次性安装：`python src/asr_transcript.py --install-amd`（下载 Lemonade 预构建的 gfx120X 版 whisper-cli——运行时 DLL 全部打包、免装 ROCm——及 GGML large-v3 模型到 `tools/`，均已 gitignore；RX 7000 系用 `--amd-arch gfx110X`）。此后 `--backend auto` 在无 CUDA 环境下自动发现并使用；也可 `--backend whispercpp` 强制。该后端按 `--chunk-sec`（默认 600s）定长块转写，断点续跑以块为粒度（残块整块重跑，不产生重复段落）；默认关闭 flash-attn 以规避 RDNA4 驱动 bug。产物 `transcript.json` 与原管线完全一致。
 - **断点续跑**：进度实时写入 `output/<id>/_asr_progress.jsonl`，中断后重跑自动从末尾续接；`--restart` 强制从头（试跑后跑全量务必带上，否则会漏掉试跑区间之前的内容）。
 - **耗时预期**：100 分钟课程在 RTX 3050 (4GB) 上约 35 分钟；期间可并行准备第三步的截帧环境与术语表。
 - 转写完成后，仍要执行覆盖率自检（脚本已内置），低于 50% 说明没跑完，重跑续写。
