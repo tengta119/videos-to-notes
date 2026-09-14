@@ -27,15 +27,17 @@
 
 ## ⚙️ 内部 Pipeline 运作原理 (Agent 侧)
 
-当你向助手发放链接任务时，本工具箱实质为其底层配置了一套五步组合流水线（参考指令文档 `instructions.md`）：
+当你向助手发放链接任务时，本工具箱实质为其底层配置了一套六步组合流水线。
+**详细流程、各步的校验判据与失败处置，一律以 `instructions.md` 为准**；本节只作导览。
 
 1. **抓取 字幕 (Scraping)**: 调用脚本 `python src/dump_transcript.py <url>` 剥离得到原始口语字幕 JSON。
    若平台侧根本没有字幕（作者未上传 CC、B 站 AI 字幕尚未生成），自动兜底 `python src/asr_transcript.py <video_id>`：
-   用 yt-dlp 只拉音频轨，再交给本地 faster-whisper（large-v3）转写，产出**与平台字幕完全同构**的 `transcript.json`，后续各步零改动。
-2. **重写 编排 (Stitching)**: AI 利用大模型能力将乱七八糟的字幕提取要义改写为 Markdown，并在关键讲解处插入 `![描述](SCREENSHOT:00:15:30)` 时间戳指令占位。
-3. **截帧 插图 (Capturing)**：在已登录浏览器中直接截取平台播放器画面（画质直接来自平台，不下载任何媒体文件）：Codex 桌面环境首选 Edge/Chrome 扩展；通用脚本 `python src/capture_frames.py` 默认使用 Edge 专用截帧配置（`.capture-profile/`，一次性登录、长期复用登录态；也可设置 `VIDEOBOOK_BROWSER=chrome`），失败后才兜底 `python src/extract_frames.py`。
-4. **渲染 网页 (Rendering)**: 调用 `python src/post_process.py <url> <md>` 把所有占位的锚点改造成 YouTube/B站原生轻量级 `iframe` 代码，并且注入极简暗色主题，把枯燥的 `.md` 内容最终渲染为可直接在线看的富文本 `.html`。
-5. **发服 预览 (Serving)**: 通过 Python 挂起一个简易的本地 HTTP 服务器。
+   用 yt-dlp 只拉音频轨，再交给本地 faster-whisper（large-v3；AMD 显卡自动改走 whisper.cpp/ROCm）转写，产出**与平台字幕完全同构**的 `transcript.json`，后续各步零改动。
+2. **订正 字幕 (Correcting)**: `python src/make_corrected.py <video_id>` 产出修正版字幕对照稿，再由 AI 做一轮行级订正——**先修错词、再写书**，避免错词带进正文。
+3. **重写 编排 (Stitching)**: AI 利用大模型能力将修正后的字幕提取要义改写为 Markdown，并在关键讲解处插入 `![描述](SCREENSHOT:00:15:30)` 时间戳指令占位；排版契约见 `prompts/stitcher_system.md`。
+4. **截帧 插图 (Capturing)**：在已登录浏览器中直接截取平台播放器画面（画质直接来自平台，不下载任何媒体文件）。优先级：Codex 桌面环境首选 ChatGPT 浏览器扩展；否则用 `python src/capture_frames.py` 的专用截帧配置（`.capture-profile/`，**默认 Edge**，一次性登录、长期复用登录态；可设 `VIDEOBOOK_BROWSER=chrome` 切换）；全部失败才兜底 `python src/extract_frames.py`。
+5. **渲染 网页 (Rendering)**: 调用 `python src/post_process.py <url> <md>` 把所有占位的锚点改造成 YouTube/B站原生轻量级 `iframe` 代码，并启动本地 HTTP 服务器预览。
+6. **发布 成品 (Publishing)**: `python src/publish.py <video_id>` 把成品提交到 `pages` 分支——详见 `DEPLOY.md`。
 
 
 ## ⚠️ 常见踩坑指南
@@ -53,9 +55,9 @@
 
 4. **在 AI 沙箱（如 Codex）里运行为何报"拒绝访问"？哪些命令需要沙箱外执行？**
    本流水线的截帧与字幕抓取需要启动 Chrome / Playwright、读取浏览器 cookie 库，属于沙箱外权限。托管给 AI 助手时，以下命令应申请沙箱外执行（Codex 中即批准 require_escalated）：
-   - `python src/capture_frames.py <video_id> <url>`（启动无头 Chrome 截帧）
-   - `python src/capture_frames.py --setup-profile`（弹出 Chrome 供一次性登录）
-   - `python src/dump_transcript.py <url>`（yt-dlp 网络请求；B 站需登录态时会自动从 .capture-profile 导出 cookies，期间启动无头 Chrome）
+   - `python src/capture_frames.py <video_id> <url>`（启动无头浏览器截帧，**默认 Edge**）
+   - `python src/capture_frames.py --setup-profile`（弹出 Edge 供一次性登录）
+   - `python src/dump_transcript.py <url>`（yt-dlp 网络请求；B 站需登录态时会自动从 `.capture-profile` 导出 cookies，期间启动无头 Edge）
    纯本地步骤（`post_process.py`、`python -m http.server`）在沙箱内即可运行。
 
 5. **视频没有任何字幕怎么办？**
@@ -63,11 +65,16 @@
    ```bash
    python src/asr_transcript.py <video_id> [--sample-start 900 --sample-dur 180]
    ```
-   - 依赖 `faster-whisper`；有 NVIDIA 显卡时自动用 CUDA（显存 ≤4GB 建议 `--compute-type int8_float16`），无卡则 CPU int8。
+   - 依赖 `faster-whisper`；有 NVIDIA 显卡时自动用 CUDA（显存 ≤4GB 建议 `--compute-type int8_float16`），无卡则 CPU int8；**AMD 显卡自动改走 whisper.cpp (ROCm)**，详见下节。
    - Windows 上若报 `Library cublas64_12.dll is not found`，装 `nvidia-cublas-cu12 nvidia-cudnn-cu12` 即可，脚本会自动注册 DLL 目录。
-   - 进度实时落盘 `_asr_progress.jsonl`，中断后重跑自动续写。
-   - 可在 `output/<video_id>/_asr_prompt.txt` 放一段本讲领域术语，用来压制同音错词并让中文输出带标点。
-   - 100 分钟课程在 RTX 3050 (4GB) 上约 35 分钟转写完；会产生约 90MB 的 `audio.m4a`，流程结束时按第五步询问是否删除。
+   - 进度实时落盘 `_asr_progress.jsonl`，中断后重跑自动续写；`--restart` 从头。
+   - **`output/<video_id>/_asr_prompt.txt` 写一行纯 ASCII 术语表**（10 个左右），例如
+     `React React React JSX Vite npm install useState useEffect props state`。
+     注意：**不要写中文主题句**——在 whisper.cpp 后端上实测压不住英文术语错词；术语堆多了还会掉中文内容。
+     详见 `instructions.md` §1b.1。
+   - **转写完必须看 stdout**：whisper.cpp 会偶发重复循环幻觉（整块内容被同一句话刷掉，**覆盖率仍显示 100%**），
+     脚本会自动检测并用 `-mc 0` 重转；若出现"重转未改善"则必须人工核对那一块。
+   - 耗时：100 分钟课程在 RTX 3050 (4GB) 上约 35 分钟；RX 9070 XT (ROCm) 实测 13–17x 实时。会产生约 90MB 的 `audio.m4a`，流程结束时询问是否删除。
 
 6. **自动导出的 cookies 会泄露吗？**
    不会落在仓库里：`dump_transcript.py` / `login_utils.py` 导出的 cookies 写入系统临时目录、用完即删；`cookies.txt` 等模式已加入 `.gitignore`。若需更高清晰度（大会员档位），在 `--setup-profile` 窗口登录大会员账号即可，截帧管线会自动按顶档原生分辨率截取。
@@ -76,24 +83,33 @@
 
 ## 📚 成品在哪里看？
 
-## AMD 显卡本地 ASR（可选）
+- **在线阅读（GitHub Pages）**：落地页列出全部电子书，点击标题即可阅读（含截图放大、Mermaid 交互）。
+  需在仓库 Settings → Pages 一次性选择分支 `pages` + `/ (root)`。具体站点地址与首次启用步骤见 `DEPLOY.md`。
+- **分支布局**：`main` = 工具代码；`pages` = 成品（独立分支，目录名 = 视频标题，如 `【零到全栈】4.3-React,前端开发规则`）。
+- **发布方式**：`python src/publish.py <video_id>` 或 `python src/publish.py --all`，然后 `git push mine pages`
+  （`mine` 是你自己的仓库；上游工具仓库是 `origin`，不要推）。发布 `book.html / book.md / images/` 与（若存在）
+  `transcript.corrected.txt`（AI 修正版字幕对照稿，落地页卡片附"字幕对照"链接）；
+  原始字幕、transcript.json 等中间物不进公开仓库；`output/` 本地工作区不受任何 git 操作影响。
 
-`faster-whisper` 的 GPU 路径面向 NVIDIA CUDA。AMD 用户可安装并编译支持 Vulkan 的
-[`whisper.cpp`](https://github.com/ggml-org/whisper.cpp)，然后使用新增脚本；它会复用
-`output/<视频ID>/audio.m4a`，并写出相同格式的字幕文件：
+---
 
-```powershell
-cmake -B build -DGGML_VULKAN=1
-cmake --build build --config Release
-python src/asr_whispercpp.py <视频ID> `
-  --cli .\whisper.cpp\build\bin\Release\whisper-cli.exe `
-  --model .\whisper.cpp\models\ggml-large-v3.bin
+## AMD 显卡本地 ASR
+
+`faster-whisper` 的 GPU 路径面向 NVIDIA CUDA，不支持 AMD。脚本会在检测不到 CUDA 时
+**自动切换到 whisper.cpp (ROCm) 后端**，无需手编。一次性安装：
+
+```bash
+python src/asr_transcript.py --install-amd
 ```
 
-需要先用 `dump_transcript.py` 或 `asr_transcript.py` 下载音频。Vulkan 是否使用 AMD
-GPU 取决于显卡驱动；可在 whisper.cpp 输出的 `system_info` 中确认。生成的
-`transcript.json` 可直接交给现有电子书整理、截图和 HTML 流程。
+它下载 Lemonade 预构建的 gfx120X 版 whisper-cli（**运行时 DLL 全部打包、免装 ROCm**）
+及 GGML large-v3 模型到 `tools/`（均已 gitignore）。RX 7000 系用 `--amd-arch gfx110X`。
+此后 `--backend auto` 会自动发现并使用；也可 `--backend whispercpp` 强制。
+该后端按 `--chunk-sec`（默认 600s）定长块转写，断点续跑以块为粒度；
+**默认关闭 flash-attn** 以规避 RDNA4 驱动 bug。
 
-- **在线阅读（GitHub Pages）**：`https://luke-evan.github.io/videobook/` —— 落地页列出全部电子书，点击标题即可阅读（含截图放大、Mermaid 交互）。需在仓库 Settings → Pages 一次性选择分支 `pages` + `/ (root)`。
-- **分支布局**：`main` = 工具代码；`pages` = 成品（独立 orphan 分支，目录名 = 视频标题，如 `提示词工程 [02-Raw／26生成式软件工程／NJU]`）。
-- **发布方式**：`python src/publish.py <video_id>` 或 `python src/publish.py --all`，然后 `git push origin pages`。发布 `book.html / book.md / images/` 与（若存在）`transcript.corrected.txt`（AI 修正版字幕对照稿，落地页卡片附"字幕对照"链接）；原始字幕、transcript.json 等中间物不进公开仓库；`output/` 本地工作区不受任何 git 操作影响。
+需要先用 `dump_transcript.py` 或 `asr_transcript.py` 下载音频。生成的 `transcript.json`
+与平台字幕完全同构，可直接交给现有订正、写书、截图和 HTML 流程。
+
+> 历史脚本 `src/asr_whispercpp.py`（需自行 `cmake -DGGML_VULKAN=1` 编译）已被上述
+> `--install-amd` 取代，**不要再用**。
