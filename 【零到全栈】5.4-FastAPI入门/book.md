@@ -121,7 +121,7 @@ sequenceDiagram
 pip install "fastapi[standard]"
 ```
 
-![pip 安装 fastapi[standard] 标准套餐过程](SCREENSHOT:00:08:35)
+![pip 安装 fastapi(standard) 标准套餐过程](images/shot_00_08_35.png)
 
 > [!NOTE]
 > 包名后方中括号 `[standard]` 是 pip 的“扩展套餐”语法，表示在安装 FastAPI 本体的同时，自动捆绑拉取官方推荐的全部标准配件（包括高性能 ASGI 服务器 `uvicorn`、类型校验库 `pydantic` 等），省去逐一单独配置的麻烦。
