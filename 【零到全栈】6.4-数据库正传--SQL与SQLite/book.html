@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.4 数据库正传：SQL 基础与 SQLite 实践</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="64-sql-sqlite">6.4 数据库正传：SQL 基础与 SQLite 实践</h1>
+<p>在上一讲“数据库前传--文件存储”中，我们亲手基于 JSON 文件为 ZeroTech 文本分析系统构建了持久化历史记录功能。虽然该方案能够完成基本的数据读写，但在实际生产场景中暴露出了致命的缺陷：<strong>每次写入都需要全量重写磁盘文件、多进程并发写入会发生相互覆盖、写入途中异常崩溃导致整库损坏，以及随数据量增长所带来的内存爆炸风险</strong>。</p>
+<p>正如我们在软件工程中所总结的铁律：“<strong>在计算机软件领域，只要是人人都会遇到的普遍问题，七步之内必有成熟解药</strong>。”人类对于持久化、安全、高效存储信息的需求早已存在了数千年，而在计算机发展史上，专门用于解决这一难题的核心技术便是<strong>数据库（Database）</strong>。早在互联网协议诞生之前八年，数据库系统就已经在工业界萌芽并快速演进。</p>
+<p>本讲作为数据库正传，将系统梳理现代数据库的核心分类体系，深入剖析轻量级嵌入式数据库 SQLite 的设计哲学与极简类型系统，通过 Python <code>sqlite3</code> 原生驱动演练 DDL/DML 语句与事务控制，深度揭示 SQL 注入攻击的破坏机制与参数化查询防御铁律，并揭秘数据库在大数据量下的外部排序与索引底层运作机理。</p>
+<hr />
+<h2 id="_1">目录</h2>
+<ol>
+<li><a href="#一数据库的发展历程与两大分类维度">数据库的发展历程与两大分类维度</a></li>
+<li><a href="#二为什么是-sqlite零配置嵌入式数据库的选型逻辑">为什么是 SQLite：零配置嵌入式数据库的选型逻辑</a></li>
+<li><a href="#三sqlite-极简类型系统与-ddl-建表规范">SQLite 极简类型系统与 DDL 建表规范</a></li>
+<li><a href="#四数据写入与事务transaction的原子性保障">数据写入与事务（Transaction）的原子性保障</a></li>
+<li><a href="#五数据查询游标控制与数据操纵语句dml">数据查询、游标控制与数据操纵语句（DML）</a></li>
+<li><a href="#六sql-注入攻击机理与参数化查询铁律">SQL 注入攻击机理与参数化查询铁律</a></li>
+<li><a href="#七大数据量操纵排序order-by与分页截断limit">大数据量操纵：排序（ORDER BY）与分页截断（LIMIT）</a></li>
+<li><a href="#八底层揭秘数据库海量数据排序与外部归并机制">底层揭秘：数据库海量数据排序与外部归并机制</a></li>
+<li><a href="#九性能优化的核心武器索引index的工作原理与代价">性能优化的核心武器：索引（Index）的工作原理与代价</a></li>
+<li><a href="#十数据库可视化工具gui实操与进阶学习指引">数据库可视化工具（GUI）实操与进阶学习指引</a></li>
+</ol>
+<hr />
+<h2 id="_2">一、数据库的发展历程与两大分类维度</h2>
+<p><em>(参考时间: 00:00 - 04:30)</em></p>
+<p>当前开源与商业数据库领域百花齐放，从老牌的 MySQL、PostgreSQL、Oracle 到新型的 MongoDB、Redis、DuckDB 等。要清晰把握数据库全貌，可以从<strong>数据形态模型</strong>与<strong>服务部署方式</strong>两个核心维度进行解构。</p>
+<pre class="highlight"><code class="language-mermaid">mindmap
+  root((现代数据库分类体系))
+    数据形态模型
+      结构化数据
+        表格形态 / 行列固定
+        代表: 关系型数据库 RDBMS / SQL
+      半结构化数据
+        Schema 自由 / 树状层级
+        代表: 文档型 NoSQL / MongoDB
+      非结构化数据
+        音视频 / 静态图片 / 大文件
+        代表: 对象存储 OSS / S3
+    服务部署架构
+      服务式 C/S 架构
+        独立守护进程 / 监听网络端口
+        代表: MySQL (3306) / PostgreSQL (5432)
+        优势: 高并发 / 细粒度权限 / 资源隔离
+      嵌入式 In-Process 架构
+        单文件物理存储 / 无常驻进程与端口
+        代表: SQLite / DuckDB
+        优势: 零运维 / 随应用部署 / 极高读性能
+</code></pre>
+
+<h3 id="1-data-model">1. 维度一：数据形态模型（Data Model）</h3>
+<ul>
+<li><strong>结构化数据（Structured Data）</strong>：具有清晰预定义的 Schema，字段结构固定，各记录对齐呈现为行列规整的二维表格。最适合的工具是<strong>关系型数据库（RDBMS）</strong>，通过统一的结构化查询语言（SQL）进行增删改查。</li>
+<li><strong>半结构化数据（Semi-structured Data）</strong>：虽然包含自描述标签或层级结构，但允许记录间字段形态差异（例如 JSON 格式）。通常交由<strong>文档型 NoSQL 数据库</strong>（如 MongoDB）托管。</li>
+<li><strong>非结构化数据（Unstructured Data）</strong>：如用户上传的图片、音视频多媒体文件及原始二进制日志。此类文件不适合直接作为大对象（BLOB）塞入关系型数据库表中，而是交给专门的<strong>云原生对象存储（Object Storage Service，如 AWS S3、阿里云 OSS）</strong>。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_02_18.png" alt="常见数据库盘点与分类维度" loading="lazy">
+  <p class="video-caption">📷 常见数据库盘点与分类维度<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=138" target="_blank" rel="noopener">在 B 站中打开 (00:02:18)</a></p>
+</div>
+
+<h3 id="2-deployment-architecture">2. 维度二：服务部署架构（Deployment Architecture）</h3>
+<ul>
+<li><strong>服务式数据库（Client-Server RDBMS）</strong>：如 MySQL（默认监听 <code>3306</code> 端口）、PostgreSQL（默认监听 <code>5432</code> 端口）。这类数据库在操作系统中作为独立的长生命周期后台守护进程运行，客户端通过 TCP/IP 网络连接与身份验证交互。具备承载大规模并发连接、高可用集群与企业级权限隔离能力。</li>
+<li><strong>嵌入式数据库（Embedded In-Process Database）</strong>：如 SQLite、DuckDB。其在物理上表现为一个普通的磁盘文件，没有独立常驻的服务进程，也不占用网络端口。应用代码通过嵌入在运行环境内部的驱动直接读写该文件。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_45.png" alt="服务式数据库与嵌入式数据库架构形态" loading="lazy">
+  <p class="video-caption">📷 服务式数据库与嵌入式数据库架构形态<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=285" target="_blank" rel="noopener">在 B 站中打开 (00:04:45)</a></p>
+</div>
+
+<hr />
+<h2 id="sqlite">二、为什么是 SQLite：零配置嵌入式数据库的选型逻辑</h2>
+<p><em>(参考时间: 04:30 - 07:45)</em></p>
+<p>回到我们的 ZeroTech 文本分析实验室项目：
+1. <strong>数据形态匹配</strong>：系统存储的文本分析记录包含用户原文、评分、情绪标签、处理时间等固定字段，是典型的规整<strong>结构化数据</strong>，首选关系型数据库。
+2. <strong>业务并发规模</strong>：作为一个小型单体原型或轻量化服务，系统不需要多台跨机器服务并发共享访问同一张数据库实例，无需承担维护独立数据库守护进程、配置防火墙与用户权限体系的运维心智负担。
+3. <strong>语言生态集成</strong>：Python 标准库原生内置了 <code>sqlite3</code> 模块，无需执行任何 <code>pip install</code> 即可开箱即用。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    A[选型决策输入] --&gt; B{数据形态?}
+    B --&gt;|规整二维表| C[关系型数据库]
+    B --&gt;|动态Schema/JSON| D[NoSQL文档数据库]
+    C --&gt; E{服务规模与架构?}
+    E --&gt;|分布式集群 / 高并发读写| F[服务式: MySQL / PostgreSQL]
+    E --&gt;|单机嵌入 / 零运维 / 轻量开销| G[嵌入式: SQLite / DuckDB]
+    G --&gt; H{核心业务定位?}
+    H --&gt;|日常联机事务 OLTP 增删改查| I[&quot;首选: SQLite (Python 内置)&quot;]
+    H --&gt;|列式分析 OLAP 大数据聚合| J[备选: DuckDB]
+</code></pre>
+
+<p>SQLite 是全球部署量最大的数据库引擎之一。它不仅广泛运行在各类嵌入式设备中，现代智能手机内部的微信聊天记录、浏览器书签与本地缓存均由几十个 SQLite 数据库文件在底层默默支撑。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_40.png" alt="Python交互式环境连接SQLite" loading="lazy">
+  <p class="video-caption">📷 Python交互式环境连接SQLite<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=400" target="_blank" rel="noopener">在 B 站中打开 (00:06:40)</a></p>
+</div>
+
+<p>在 Python REPL 中，只需简单的三行代码即可初始化一个全新的本地数据库：</p>
+<pre class="highlight"><code class="language-python">import sqlite3
+
+# 建立连接：若 test.db 文件不存在，引擎将在指定路径自动创建
+conn = sqlite3.connect('test.db')
+
+# 获取数据库操作游标
+cursor = conn.cursor()
+</code></pre>
+
+<p>此时退出 Python 交互终端并在文件系统查看当前目录，即可发现一个大小为数 KB 的物理文件 <code>test.db</code>。这就是嵌入式数据库的全部载体。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_08_48.png" alt="物理文件test.db展示" loading="lazy">
+  <p class="video-caption">📷 物理文件test.db展示<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=528" target="_blank" rel="noopener">在 B 站中打开 (00:08:48)</a></p>
+</div>
+
+<hr />
+<h2 id="sqlite-ddl">三、SQLite 极简类型系统与 DDL 建表规范</h2>
+<p><em>(参考时间: 07:45 - 13:15)</em></p>
+<p>虽然不同的关系型数据库均支持 SQL 标准，但各家引擎在具体数据类型与扩展语法上均存在细微差异（即“SQL 方言”）。SQLite 遵循“极简与轻便”的工程哲学，其类型系统经过了高度收敛。</p>
+<h3 id="1-sqlite">1. SQLite 极简数据类型系统</h3>
+<p>主流数据库如 PostgreSQL 拥有数十种严谨的数据类型，而 SQLite 核心仅有 3 种原生存储类别：
+- <code>INTEGER</code>：有符号整数（根据数值大小自动采用 1~8 字节动态存储）。
+- <code>REAL</code>：浮点数（IEEE 8-byte 浮点数）。
+- <code>TEXT</code>：文本字符串（采用 UTF-8 编码）。</p>
+<blockquote>
+<p>[!NOTE] 缺失的原生类型如何表达？
+SQLite <strong>没有专门的布尔（BOOLEAN）与日期时间（DATETIME）存储类</strong>：
+- 布尔逻辑：通常约定使用整型 <code>0</code>（False）与 <code>1</code>（True）表达。
+- 日期时间：通常约定使用 <code>TEXT</code> 存储符合 ISO 8601 标准的 UTC 时间字符串（例如 <code>"2026-09-15 11:00:00"</code>），配合内建日期时间函数进行运算。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_25.png" alt="SQLite极简数据类型对比分析" loading="lazy">
+  <p class="video-caption">📷 SQLite极简数据类型对比分析<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=625" target="_blank" rel="noopener">在 B 站中打开 (00:10:25)</a></p>
+</div>
+
+<h3 id="2-ddl-films">2. DDL 规范：创建电影数据表（films）</h3>
+<p>为演示 SQL 增删改查，我们规划一张经典电影信息表 <code>films</code>：
+- <code>id</code>：主键，整数自增，唯一标识每一行记录。
+- <code>title</code>：电影名称，文本类型。
+- <code>language</code>：语言类别，文本类型。
+- <code>release_date</code>：上映时间，文本类型。
+- <code>created_at</code>：记录写入时间，文本类型。</p>
+<pre class="highlight"><code class="language-sql">CREATE TABLE films (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    language TEXT,
+    release_date TEXT,
+    created_at TEXT
+);
+</code></pre>
+
+<blockquote>
+<p>[!IMPORTANT] 为什么数据表必须引入自增主键（PRIMARY KEY AUTOINCREMENT）？
+现实世界中的自然属性（如电影名称、语言、上映日期）在理论上均存在同名、变更或重复的可能。在关系型数据库设计范式中，必须为每条数据赋予一个与业务逻辑解耦的无物理意义代理键（Surrogate Key），配合 <code>AUTOINCREMENT</code> 自增机制保证绝对唯一，同时主键默认会自动创建 B-Tree 索引以保障检索性能。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_45.png" alt="建表DDL语句与字段设计说明" loading="lazy">
+  <p class="video-caption">📷 建表DDL语句与字段设计说明<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=765" target="_blank" rel="noopener">在 B 站中打开 (00:12:45)</a></p>
+</div>
+
+<p>在 Python 中执行建表 DDL 时，通过游标对象的 <code>execute()</code> 方法发送 SQL 语句：</p>
+<pre class="highlight"><code class="language-python">cursor.execute('''
+CREATE TABLE films (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    language TEXT,
+    release_date TEXT,
+    created_at TEXT
+)
+''')
+</code></pre>
+
+<hr />
+<h2 id="transaction">四、数据写入与事务（Transaction）的原子性保障</h2>
+<p><em>(参考时间: 13:15 - 18:20)</em></p>
+<p>建表完成后，便可使用 <code>INSERT INTO</code> 语句向表中灌入数据。</p>
+<h3 id="1">1. 插入单条记录</h3>
+<pre class="highlight"><code class="language-python">cursor.execute('''
+INSERT INTO films (title, language, release_date, created_at)
+VALUES ('肖申克的救赎', '英语', '1994-09-10', datetime('now'))
+''')
+conn.commit()  # 关键：提交事务
+</code></pre>
+
+<p>语句要点剖析：
+1. <strong>字符串字面量</strong>：SQL 语法中，文本字面量必须使用单引号 <code>'...'</code> 包裹。
+2. <strong>内建时间函数</strong>：<code>datetime('now')</code> 是 SQLite 内建的时间函数，无需在 Python 端获取本地系统时区时间，SQLite 会自动读取当前 UTC 时间并生成标准格式文本。
+3. <strong>省略自增主键</strong>：<code>id</code> 字段由于配置了 <code>AUTOINCREMENT</code>，无需在 INSERT 列表显式指定，数据库底层自动自增分配。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_35.png" alt="执行INSERT语句与参数解析" loading="lazy">
+  <p class="video-caption">📷 执行INSERT语句与参数解析<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=875" target="_blank" rel="noopener">在 B 站中打开 (00:14:35)</a></p>
+</div>
+
+<h3 id="2-transaction-commit">2. 核心机制：事务（Transaction）与 <code>commit()</code> 的原子性保障</h3>
+<p>很多初学者常产生疑问：<em>“为什么 <code>cursor.execute()</code> 执行之后，必须额外调用 <code>conn.commit()</code>？为什么不让每条语句直接物理写入磁盘？”</em></p>
+<p>答案在于<strong>保证业务单元的原子性（Atomicity）与数据一致性（Consistency）</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    autonumber
+    participant App as 应用程序 (Python)
+    participant Trans as 事务缓冲区 (内存/WAL)
+    participant Disk as 物理数据库文件 (磁盘)
+
+    Note over App, Disk: 业务场景: 电商下单 (扣减库存 + 生成销售订单)
+    App-&gt;&gt;Trans: 1. cursor.execute(&quot;INSERT INTO orders...&quot;)
+    App-&gt;&gt;Trans: 2. cursor.execute(&quot;UPDATE stock SET count = count - 1...&quot;)
+    alt 途中服务器断电或抛出异常
+        App--&gt;&gt;Trans: 异常中断 / 未执行 commit()
+        Trans-&gt;&gt;Trans: 回滚 (Rollback) 抛弃未提交脏改动
+        Note over Disk: 物理磁盘数据完好无损，库存绝不会单边扣减！
+    else 业务步骤全部成功
+        App-&gt;&gt;Disk: 3. conn.commit()
+        Disk--&gt;&gt;App: 批量刷盘持久化，事务原子生效
+    end
+</code></pre>
+
+<p>以企业进销存业务为例：一笔销售业务逻辑上必须同时完成两件事：
+1. 向销售记录表插入一条订单。
+2. 在库存商品表中扣减对应的库存计数。</p>
+<p>若没有事务机制，当第一条语句写入成功、而第二条语句因网络或断电执行失败时，数据库将处于“订单存在但库存未扣”的脏数据撕裂状态。<strong>事务确保了一组操作要么全部成功持久化，要么全部不生效（回滚 Rollback）</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_15.png" alt="事务原子性与提交机制" loading="lazy">
+  <p class="video-caption">📷 事务原子性与提交机制<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1035" target="_blank" rel="noopener">在 B 站中打开 (00:17:15)</a></p>
+</div>
+
+<hr />
+<h2 id="dml">五、数据查询、游标控制与数据操纵语句（DML）</h2>
+<p><em>(参考时间: 18:20 - 22:25)</em></p>
+<h3 id="1-select-fetch">1. 查询基础与游标提取（SELECT &amp; FETCH）</h3>
+<p>查询数据采用标准的 <code>SELECT</code> 语法结构：<code>SELECT 字段名 FROM 表名 WHERE 过滤条件</code>。
+- 若需要提取表内所有字段，可使用通配符星号 <code>*</code>。
+- 在 Python 中，<code>cursor.execute()</code> 仅仅是将查询请求推送到引擎并初始化结果集游标，程序必须通过调用游标的提取方法将结果载入内存：
+  - <code>cursor.fetchall()</code>：提取满足条件的全部记录（返回由元组构成的列表）。
+  - <code>cursor.fetchone()</code>：仅提取下一条匹配记录。</p>
+<pre class="highlight"><code class="language-python">cursor.execute(&quot;SELECT * FROM films WHERE id = 1&quot;)
+result = cursor.fetchall()
+print(result)
+# 输出: [(1, '肖申克的救赎', '英语', '1994-09-10', '2026-09-15 03:00:00')]
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_15.png" alt="SELECT查询与fetchall游标提取" loading="lazy">
+  <p class="video-caption">📷 SELECT查询与fetchall游标提取<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1215" target="_blank" rel="noopener">在 B 站中打开 (00:20:15)</a></p>
+</div>
+
+<h3 id="2">2. 数据更新与删除的红线警示</h3>
+<ul>
+<li><strong>数据更新（UPDATE）</strong>：
+  <code>sql
+  UPDATE films SET language = '中文字幕' WHERE id = 1;</code></li>
+<li><strong>数据删除（DELETE）</strong>：
+  <code>sql
+  DELETE FROM films WHERE id = 1;</code><blockquote>
+<p>[!CAUTION] 永远敬畏没有 WHERE 的 DELETE 与 DROP！
+<code>DELETE FROM films;</code> 若不带 <code>WHERE</code> 条件，将瞬间清空整张表的所有数据行！
+而 <code>DROP TABLE films;</code> 则是将数据与表结构彻底从物理磁盘抹除（即俗称的“删库跑路”）。涉及修改与删除的操作必须经过严格校验并调用 <code>conn.commit()</code> 才会持久化落盘。</p>
+</blockquote>
+</li>
+</ul>
+<hr />
+<h2 id="sql">六、SQL 注入攻击机理与参数化查询铁律</h2>
+<p><em>(参考时间: 22:25 - 28:05)</em></p>
+<p>在日常 Web 业务开发中，根据用户输入的关键词动态检索数据是最基本的功能。然而，如果开发者采用直接<strong>拼接 SQL 字符串</strong>的方式传参，就会埋下计算机安全史上最为经典且灾难性的安全漏洞——<strong>SQL 注入（SQL Injection）</strong>。</p>
+<h3 id="1_1">1. 致命的字符串拼接漏洞演示</h3>
+<p>假设后端编写了一个根据电影标题搜索详情的接口，代码逻辑如下：</p>
+<pre class="highlight"><code class="language-python"># 危险的反面教材：使用 f-string 或 format 拼接 SQL
+user_input = &quot;花样年华&quot;
+query = f&quot;SELECT * FROM films WHERE title = '{user_input}'&quot;
+cursor.execute(query)
+</code></pre>
+
+<p>当正常用户输入 <code>"花样年华"</code> 时，拼接出的 SQL 为：</p>
+<pre class="highlight"><code class="language-sql">SELECT * FROM films WHERE title = '花样年华'
+</code></pre>
+
+<p>逻辑正常，平稳运行。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_24_45.png" alt="电影名称搜索功能的初始实现" loading="lazy">
+  <p class="video-caption">📷 电影名称搜索功能的初始实现<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1485" target="_blank" rel="noopener">在 B 站中打开 (00:24:45)</a></p>
+</div>
+
+<h3 id="2-sql">2. SQL 注入攻击与提权机理</h3>
+<p>假设某个恶意攻击者（或特殊命名的输入内容）提交了如下字符串：</p>
+<pre class="highlight"><code class="language-text">' OR '1'='1
+</code></pre>
+
+<p>代入字符串拼接逻辑后，引擎最终收到的完整 SQL 被篡改为：</p>
+<pre class="highlight"><code class="language-sql">SELECT * FROM films WHERE title = '' OR '1'='1'
+</code></pre>
+
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph 恶意拼接后的 SQL 结构
+        A[&quot;SELECT * FROM films WHERE&quot;] --&gt; B[&quot;title = ''&quot;]
+        B --&gt; C[&quot;OR&quot;]
+        C --&gt; D[&quot;'1'='1' (恒真逻辑 True)&quot;]
+    end
+    D --&gt; E[&quot;整条 WHERE 条件判定永真！&quot;]
+    E --&gt; F[&quot;整张数据表隐私内容全量泄露！&quot;]
+</code></pre>
+
+<p>攻击机理深度剖析：
+1. 用户输入开头的单引号 <code>'</code>，与代码中原有的闭合单引号相撞，<strong>提前闭合了原本用于框定文本数据的字符串边界</strong>。
+2. 注入者输入了 SQL 逻辑运算符 <code>OR</code> 以及一个恒真表达式 <code>'1'='1'</code>。
+3. 对数据表中的每一行而言，不论 <code>title</code> 实际为何，<code>'1'='1'</code> 均永远成立，导致整张表的数据无死角全量泄露！如果恶意输入中注入了 <code>; DROP TABLE films;</code>，甚至能直接造成物理删库。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_26_15.png" alt="SQL注入导致整张表数据泄露演示" loading="lazy">
+  <p class="video-caption">📷 SQL注入导致整张表数据泄露演示<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1575" target="_blank" rel="noopener">在 B 站中打开 (00:26:15)</a></p>
+</div>
+
+<h3 id="3-parameterized-query">3. 唯一的工业级解药：参数化查询（Parameterized Query）</h3>
+<p>安全防御的核心铁律是：<strong>“永远不要信任任何来自客户端或用户的外部输入；绝对禁止将用户输入直接作为可执行代码片段进行拼接。”</strong></p>
+<p>正确的解法是使用数据库驱动支持的<strong>参数化查询（占位符绑定机制）</strong>：</p>
+<pre class="highlight"><code class="language-python"># 工业级标准解法：使用 ? 占位符 + 参数元组传递
+safe_input = &quot;' OR '1'='1&quot;
+safe_sql = &quot;SELECT * FROM films WHERE title = ?&quot;
+cursor.execute(safe_sql, (safe_input,))
+</code></pre>
+
+<p>参数化查询的底层原理：
+- 数据库引擎首先对带 <code>?</code> 占位符的 SQL 模板进行编译和词法语法解析，确立了语法树骨架。
+- 随后传入的参数被驱动程序强制当成<strong>纯文本数据值</strong>传入，驱动会自动处理引号转义。无论参数中含有多少引号、分号或 SQL 关键字，都绝不可能跨越边界成为可执行指令。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_27_30.png" alt="参数化查询问号占位符演示" loading="lazy">
+  <p class="video-caption">📷 参数化查询问号占位符演示<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1650" target="_blank" rel="noopener">在 B 站中打开 (00:27:30)</a></p>
+</div>
+
+<hr />
+<h2 id="order-bylimit">七、大数据量操纵：排序（ORDER BY）与分页截断（LIMIT）</h2>
+<p><em>(参考时间: 28:05 - 34:00)</em></p>
+<p>数据库的真正威力在于处理数万乃至数亿级海量数据时的稳定与高效。为了实测大数据量下的核心功能，我们编写一段数据种子灌装脚本 <code>seed_data.py</code>。</p>
+<h3 id="1_2">1. 种子数据批量灌装脚本</h3>
+<pre class="highlight"><code class="language-python"># seed_data.py
+import sqlite3
+import time
+
+conn = sqlite3.connect('test.db')
+cur = conn.cursor()
+
+# 销毁旧表并重建
+cur.execute(&quot;DROP TABLE IF EXISTS films&quot;)
+cur.execute('''
+CREATE TABLE films (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    language TEXT,
+    release_date TEXT,
+    created_at TEXT
+)
+''')
+
+movies = [
+    (&quot;肖申克的救赎&quot;, &quot;英语&quot;, &quot;1994-09-10&quot;),
+    (&quot;霸王别姬&quot;, &quot;汉语&quot;, &quot;1993-01-01&quot;),
+    (&quot;阿甘正传&quot;, &quot;英语&quot;, &quot;1994-06-23&quot;),
+    (&quot;泰坦尼克号&quot;, &quot;英语&quot;, &quot;1997-11-01&quot;),
+    (&quot;千与千寻&quot;, &quot;日语&quot;, &quot;2001-07-20&quot;),
+    (&quot;美丽人生&quot;, &quot;意大利语&quot;, &quot;1997-12-20&quot;),
+    (&quot;星际穿越&quot;, &quot;英语&quot;, &quot;2014-10-26&quot;),
+    (&quot;盗梦空间&quot;, &quot;英语&quot;, &quot;2010-07-08&quot;),
+    (&quot;寄生虫&quot;, &quot;韩语&quot;, &quot;2019-05-21&quot;),
+    (&quot;欢迎来龙餐馆&quot;, &quot;德语&quot;, &quot;2023-01-01&quot;)
+]
+
+for title, lang, rel in movies:
+    cur.execute('''
+    INSERT INTO films (title, language, release_date, created_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ''', (title, lang, rel))
+    conn.commit()
+    time.sleep(1)  # 每次插入休眠1秒，确保每条记录的 created_at 时间错开
+
+conn.close()
+print(&quot;种子数据灌装完毕！&quot;)
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_29_40.png" alt="编写seed_data.py批量灌装数据" loading="lazy">
+  <p class="video-caption">📷 编写seed_data.py批量灌装数据<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=1780" target="_blank" rel="noopener">在 B 站中打开 (00:29:40)</a></p>
+</div>
+
+<h3 id="2_1">2. 排序与分页截断语法</h3>
+<ul>
+<li><code>ORDER BY &lt;column&gt; [ASC|DESC]</code>：按照指定列排序。默认 <code>ASC</code>（升序，从小到大）；指定 <code>DESC</code> 则为降序（从大到小）。</li>
+<li><code>LIMIT &lt;n&gt;</code>：限制结果集仅返回前 $n$ 条记录。</li>
+</ul>
+<pre class="highlight"><code class="language-sql">-- 按照入库时间 created_at 逆序排列，仅获取最新的 5 部电影
+SELECT title, language, created_at 
+FROM films 
+ORDER BY created_at DESC 
+LIMIT 5;
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_33_20.png" alt="执行ORDER BY与LIMIT联合查询" loading="lazy">
+  <p class="video-caption">📷 执行ORDER BY与LIMIT联合查询<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=2000" target="_blank" rel="noopener">在 B 站中打开 (00:33:20)</a></p>
+</div>
+
+<h3 id="3-vs">3. 文件方案 vs 数据库方案的本质思维跃迁</h3>
+<p>回顾上一讲中纯 Python + JSON 文件方案的实现：</p>
+<pre class="highlight"><code class="language-python"># 文件存储模式: 命令式 (Imperative)
+# 1. 读出整份 JSON 文件并反序列化为内存中的巨型列表
+# 2. 调用 Python 内置 sorted() 按照时间戳重新排布
+# 3. 使用列表切片 [:5] 取出前 5 项
+</code></pre>
+
+<p>而在数据库方案中，只需向引擎发送一行声明式的 SQL 语句：</p>
+<blockquote>
+<p><strong>“命令式思维关注过程（一步一步告诉计算机怎么读、怎么排、怎么切片）；而 SQL 声明式思维关注结果（只告诉引擎‘我要按时间倒序的前五条’，具体的物理存储、并发安全与执行优化全部交给数据库内核）。”</strong></p>
+</blockquote>
+<hr />
+<h2 id="_3">八、底层揭秘：数据库海量数据排序与外部归并机制</h2>
+<p><em>(参考时间: 34:00 - 41:00)</em></p>
+<p>有经验的开发者会追问：<em>“如果全表有一亿条数据，而服务器内存只有 4GB，此时执行没有 LIMIT 的全量 ORDER BY，数据库难道不会因为将一亿条数据全搬进内存而导致 OOM（内存溢出）崩溃吗？”</em></p>
+<p>答案是：<strong>数据库采用了极其精妙的外部排序（External Merge Sort）与局部打擂台算法</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph 阶段一: 分块内排序与外存下刷
+        A[磁盘上 1 亿条海量无序数据] --&gt; B[分批读取定额数据进入有限内存池]
+        B --&gt; C[内存内快速排序]
+        C --&gt; D[写出为磁盘有序临时段 Run 1, Run 2... Run N]
+    end
+    subgraph 阶段二: 多路平衡归并
+        D --&gt; E[取每个有序段的首位最大元素放入内存打擂台]
+        E --&gt; F[决胜出全局最大值并写入输出流]
+        F --&gt; G[对应的段替补次大元素继续参与擂台赛]
+    end
+    G --&gt; H[输出全局有序结果集 (内存消耗恒定可控!)]
+</code></pre>
+
+<h3 id="1-a-limit-k-top-k">1. 场景 A：带有 <code>LIMIT K</code> 的 Top-K 堆内存擂台赛</h3>
+<p>当 SQL 语句指定了 <code>ORDER BY created_at DESC LIMIT 10</code> 时：
+1. 数据库在内存中仅开辟容纳 10 个元素的小型内存堆（如最小堆）。
+2. 从磁盘逐行流式扫描记录：先填满这 10 个位置。
+3. 后续每读入一条新记录，仅与当前堆中的最小值比较（打擂台）。如果新记录比当前第 10 名还要小，直接就地丢弃；若大于第 10 名，则淘汰旧的第 10 名并将新记录推入调整。
+4. <strong>全表扫描完毕后，内存中常驻的始终是全局最大的 10 条记录，内存占用极低且恒定</strong>。</p>
+<h3 id="2-bexternal-merge-sort">2. 场景 B：全量排序时的外部归并排序（External Merge Sort）</h3>
+<p>当无法通过 <code>LIMIT</code> 截断时，数据库通过两阶段策略避免 OOM：
+1. <strong>分段划分（Chunking &amp; Run Generation）</strong>：按照配置的内存缓冲区大小（例如 64MB），依次读入一批数据，在内存中完成排序后，作为一个个独立的有序临时文件（Run）刷写到磁盘外存。
+2. <strong>多路归并（Multi-way Merge）</strong>：每个临时段均已内部有序。此时只需从各段的头部各取出 1 条数据放入内存比对，胜出者即为全局最大值并输出；随后从该胜出者所在的段中补入次大元素继续比拼。最终以极小的内存占用完成了对海量数据的全局稳定排序。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_38_40.png" alt="数据库外排序与多路归并机制剖析" loading="lazy">
+  <p class="video-caption">📷 数据库外排序与多路归并机制剖析<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=2320" target="_blank" rel="noopener">在 B 站中打开 (00:38:40)</a></p>
+</div>
+
+<hr />
+<h2 id="index">九、性能优化的核心武器：索引（Index）的工作原理与代价</h2>
+<p><em>(参考时间: 41:00 - 45:30)</em></p>
+<p>虽然外部归并排序解决了“内存不会爆炸”的问题，但频繁与物理磁盘打交道进行临时文件读写，会导致查询延迟急剧升高。要实现“既不爆内存，又具备毫秒级极致检索响应”，解药便是数据库的核心机制——<strong>索引（Index）</strong>。</p>
+<h3 id="1_3">1. 索引的本质：排序前置与按图索骥</h3>
+<p>索引的本质是<strong>在数据写入时，提前维护好一份基于特定列排序的轻量级检索目录（通常采用 B+Tree 结构）</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    subgraph 索引目录 B-Tree (按 created_at 严格排好序)
+        I1[&quot;...&quot;] --&gt; I2[&quot;2026-09-15 03:00:08&quot;]
+        I2 --&gt; I3[&quot;2026-09-15 03:00:09&quot;]
+        I3 --&gt; I4[&quot;2026-09-15 03:00:10 (最新)&quot;]
+    end
+    subgraph 物理聚簇数据表 (记录散落存储于磁盘各页)
+        R1[电影数据行 A]
+        R2[电影数据行 B]
+        R3[电影数据行 C]
+    end
+    I4 -.-&gt;|物理指针回表| R3
+    I3 -.-&gt;|物理指针回表| R1
+    I2 -.-&gt;|物理指针回表| R2
+</code></pre>
+
+<p>当 <code>created_at</code> 字段建立了索引后：
+- 如果我们要获取最新 3 条电影，数据库<strong>无需扫描整张数据表，也无需执行任何排序算法</strong>。
+- 引擎直接沿着索引树直接定位到最右侧末尾的 3 个叶子节点，顺着节点携带的物理行指针（RowID），精准直达磁盘对应位置提取真实数据行（回表操作）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_41_40.png" alt="索引机制按图索骥定位数据行原理" loading="lazy">
+  <p class="video-caption">📷 索引机制按图索骥定位数据行原理<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=2500" target="_blank" rel="noopener">在 B 站中打开 (00:41:40)</a></p>
+</div>
+
+<h3 id="2_2">2. 软件工程的权衡：索引的三大代价</h3>
+<p>“天底下没有免费的午餐，所有看似完美的架构设计背后都有代价”：
+1. <strong>物理磁盘空间代价</strong>：索引本身是一份独立的树状数据结构，需要占用额外的磁盘空间。
+2. <strong>写入与变更性能损耗</strong>：每次执行 <code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> 操作时，数据库内核都必须同步修改并重平衡索引树，导致数据写入吞吐量下降。
+3. <strong>维护心智代价</strong>：除主键（<code>PRIMARY KEY</code>）默认自带索引外，普通列不会自动建立索引。必须由架构师根据高频查询场景明确声明（如 <code>CREATE INDEX idx_created_at ON films(created_at);</code>）。</p>
+<blockquote>
+<p>[!TIP] 生产环境建索引的黄金准则
+严禁“雨露均沾”地为每个字段都盲目创建索引！只给经常作为 <code>WHERE</code> 过滤条件、<code>ORDER BY</code> 排序基准或 <code>JOIN</code> 关联键的高频字段创建索引。</p>
+</blockquote>
+<hr />
+<h2 id="gui">十、数据库可视化工具（GUI）实操与进阶学习指引</h2>
+<p><em>(参考时间: 45:30 - 51:35)</em></p>
+<h3 id="1-sqlite_1">1. SQLite 常用可视化管理客户端</h3>
+<p>在实际项目调试与数据排查时，纯代码交互不够直观。我们可以借助成熟的开源 GUI 工具直观探索数据库内容：
+- <strong>DB Browser for SQLite</strong>：专为 SQLite 设计的开源跨平台工具，轻量快速，支持可视化查看表结构、浏览数据行与即时执行 SQL。
+- <strong>DBeaver</strong>：功能强大的通用多数据库管理软件（社区版免费且跨平台）。
+- <strong>商业化专业工具</strong>：如 JetBrains DataGrip、Navicat（适合对企业级多数据库协作有更高要求的开发者）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_47_40.png" alt="DB Browser for SQLite可视化浏览与查询" loading="lazy">
+  <p class="video-caption">📷 DB Browser for SQLite可视化浏览与查询<br><a href="https://www.bilibili.com/video/BV1AR8U6REzY?t=2860" target="_blank" rel="noopener">在 B 站中打开 (00:47:40)</a></p>
+</div>
+
+<p>在 DB Browser for SQLite 中：
+1. 点击 <strong>Open Database</strong> 打开本地 <code>test.db</code> 文件。
+2. 切换到 <strong>Browse Data</strong> 选项卡，即可如同电子表格般直观查看 <code>films</code> 表内的所有行与列。
+3. 切换到 <strong>Execute SQL</strong> 选项卡，支持直接编写并运行 SQL 查询，实时观察返回的数据集与执行耗时。</p>
+<h3 id="2_3">2. 总结与下阶段路线</h3>
+<p>通过本讲的学习，我们系统建立了对关系型数据库与 SQLite 的核心认知：
+- <strong>理解了持久化选型</strong>：明确了关系型 vs 非关系型、服务式 vs 嵌入式的应用边界，厘清了 ZeroTech 选用 SQLite 的必然性。
+- <strong>掌握了数据库交互</strong>：熟悉了 Python <code>sqlite3</code> 原生驱动、DDL 建表、DML 增删查改与游标处理机制。
+- <strong>筑牢了安全防线</strong>：深刻领悟了 SQL 注入攻击的破坏机理，牢记<strong>绝对使用参数化查询（<code>?</code> 占位符）</strong>的开发铁律。
+- <strong>洞察了底层性能机理</strong>：理解了海量数据下的外部归并排序与索引（Index）的以空间换时间哲学。</p>
+<p>在接下来的第 28 讲中，我们将重返 ZeroTech 项目，彻底拆除老旧的 JSON 文件存储架构，利用 SQLite 重构文本实验室的持久化系统，全面拥抱真正的现代化数据库！</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
