@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.5 重构：在项目中使用 SQLite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="65-sqlite">6.5 重构：在项目中使用 SQLite</h1>
+<p>在上一讲“数据库正传--SQL与SQLite”中，我们系统学习了关系型数据库的基础理论、SQLite 的极简设计哲学、DDL/DML 语法规范、事务控制，以及使用参数化查询防御 SQL 注入的工业级标准。</p>
+<p>然而，截至目前，我们的 ZeroTech 文本分析系统依然在使用老旧的 <code>history.json</code> 文件方案维护历史记录。本讲的目标是将 ZeroTech 的存储层进行彻底现代化改造：<strong>将底层物理存储平滑迁移至 SQLite 数据库，同时确保对外 HTTP API 契约与前端交互 100% 保持不变</strong>。</p>
+<p>在动手编写 SQL 之前，我们将首先对后端的架构职责进行严格审视，遵循软件工程中<strong>“重构（Refactoring）”</strong>的黄金准则，采用<strong>“先搬家、后装修”</strong>的两阶段工程策略，将混杂在 <code>main.py</code> 中的接口层、业务层与存储层清晰剥离，为后续换库乃至未来架构演进筑牢坚实的边界。</p>
+<hr />
+<h2 id="_1">目录</h2>
+<ol>
+<li><a href="#一审视现有架构mainpy-的职责混杂痛点">审视现有架构：<code>main.py</code> 的职责混杂痛点</a></li>
+<li><a href="#二重构的核心法则与先搬家后装修策略">重构的核心法则与“先搬家后装修”策略</a></li>
+<li><a href="#三第一阶段搬家抽离-storagepy-存储模块">第一阶段（搬家）：抽离 <code>storage.py</code> 存储模块</a></li>
+<li><a href="#四深化架构边界limit-分页截断的决定权归属">深化架构边界：<code>LIMIT</code> 分页截断的决定权归属</a></li>
+<li><a href="#五第二阶段装修storagepy-全面接入-sqlite">第二阶段（装修）：<code>storage.py</code> 全面接入 SQLite</a></li>
+<li><a href="#六mainpy-接入初始化与系统全链路联调"><code>main.py</code> 接入初始化与系统全链路联调</a></li>
+<li><a href="#七生产级工程规范数据不进-git-与老资产清理">生产级工程规范：数据不进 Git 与老资产清理</a></li>
+<li><a href="#八架构拓展视野orm对象关系映射核心机理">架构拓展视野：ORM（对象关系映射）核心机理</a></li>
+<li><a href="#九高频查询优化在代码中声明式创建索引">高频查询优化：在代码中声明式创建索引</a></li>
+<li><a href="#十总结与下一阶段演进会话与状态隔离">总结与下一阶段演进：会话与状态隔离</a></li>
+</ol>
+<hr />
+<h2 id="mainpy">一、审视现有架构：<code>main.py</code> 的职责混杂痛点</h2>
+<p><em>(参考时间: 00:00 - 03:00)</em></p>
+<p>打开我们当前的 <code>backend/main.py</code>，虽然文件仅有几十行代码，但仔细梳理会发现它同时承担了三种完全不同的系统职责：</p>
+<pre class="highlight"><code class="language-mermaid">graph TD
+    subgraph 单一文件 main.py 内混杂的三种职责
+        R1[&quot;接口层 (Presentation/API Layer)&lt;br/&gt;• @app.get('/api/history')&lt;br/&gt;• @app.post('/api/analyze')&lt;br/&gt;• 负责 HTTP 协议解析与状态码响应&quot;]
+        R2[&quot;业务层 (Business/Domain Layer)&lt;br/&gt;• SnowNLP 情感倾向打分&lt;br/&gt;• pypinyin 多音字与拼音生成&lt;br/&gt;• 组装业务分析报告字典&quot;]
+        R3[&quot;存储层 (Persistence/Storage Layer)&lt;br/&gt;• history.json 磁盘路径常量&lt;br/&gt;• json.load() 全量读取与解析&lt;br/&gt;• records[::-1][:10] 内存倒序切片&lt;br/&gt;• json.dump() 全量落盘覆写&quot;]
+    end
+</code></pre>
+
+<p>在功能原型阶段，几行读写文件的逻辑顺手写在路由函数内尚可接受。但当我们需要将存储底层从 JSON 替换为 SQLite 时，这种耦合就会引发灾难：<strong>我们本只想改动数据的持久化方式，却不得不深入修改接口层路由函数内部的代码</strong>。</p>
+<p>如果在接口函数内直接混入 SQL 语句或数据库连接游标，未来当存储介质需要从 SQLite 升级为分布式 PostgreSQL 时，所有的业务与接口代码都将被迫再次遭受牵连。因此，在正式切换数据库之前，必须先对代码结构进行解耦。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_01_25.png" alt="main.py三层职责混杂分析" loading="lazy">
+  <p class="video-caption">📷 main.py三层职责混杂分析<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=85" target="_blank" rel="noopener">在 B 站中打开 (00:01:25)</a></p>
+</div>
+
+<hr />
+<h2 id="_2">二、重构的核心法则与“先搬家后装修”策略</h2>
+<p><em>(参考时间: 03:00 - 08:30)</em></p>
+<h3 id="1">1. 重构的严谨定义与唯一标尺</h3>
+<p>软件工程领域对<strong>代码重构（Refactoring）</strong>有着严格的定义：</p>
+<blockquote>
+<p><strong>“重构是在不改变软件系统‘外部可观察行为’的前提下，改善其内部结构的高级技术。”</strong></p>
+</blockquote>
+<p>重构的核心纪律是：<strong>只挪位置，不改行为</strong>。重构前后，系统接收相同的输入，必须产生绝对相同的输出。这一原则为重构提供了天然的验收标尺：重构完毕后运行测试，但凡结果有一丝一毫不同，就证明重构出现了偏差。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_03_45.png" alt="重构核心原则：只挪位置不改行为" loading="lazy">
+  <p class="video-caption">📷 重构核心原则：只挪位置不改行为<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=225" target="_blank" rel="noopener">在 B 站中打开 (00:03:45)</a></p>
+</div>
+
+<h3 id="2-storagepy">2. 为什么新建的文件命名为 <code>storage.py</code>？</h3>
+<p>我们将拆分出的存储层模块命名为 <code>storage.py</code>，而不是 <code>sqlite.py</code> 或 <code>db.py</code>。
+- <strong>依据职责命名，而非依据实现命名</strong>：这一层的核心职责是“提供存储能力（Storage）”，其实现介质今天可以是本地 JSON，明天可以是 SQLite，未来还可以是云端 PostgreSQL。
+- <strong>调用方接口稳定</strong>：外部接口始终调用 <code>save_record()</code> 与 <code>get_history()</code>，无论底层物理介质如何翻天覆地，上层消费方无需感知任何名称变更。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    A[上层业务与接口: main.py] --&gt;|语义化调用| B[&quot;统一存储契约: storage.py&lt;br/&gt;save_record() / get_history()&quot;]
+    B -.-&gt;|阶段一| C[底层实现 A: JSON 文件]
+    B -.-&gt;|阶段二| D[底层实现 B: SQLite 数据库]
+    B -.-&gt;|未来扩展| E[底层实现 C: PostgreSQL / 云存储]
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_30.png" alt="存储层模块设计与职责命名逻辑" loading="lazy">
+  <p class="video-caption">📷 存储层模块设计与职责命名逻辑<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=390" target="_blank" rel="noopener">在 B 站中打开 (00:06:30)</a></p>
+</div>
+
+<h3 id="3">3. “先搬家、后装修”两阶段策略</h3>
+<p>许多开发者习惯“边搬文件、边改写为 SQL”，但这往往会导致灾难性的调试泥潭：
+- <strong>“搬坏了”</strong>：导入路径错误、函数作用域丢失、少拷了一行常量。
+- <strong>“改坏了”</strong>：SQL 语法报错、数据类型不匹配、事务未提交。</p>
+<p>如果两件事混在一起，一旦系统报错，我们将无法判断究竟是文件拆分导致还是数据库驱动导致，唯一的“行为不变”验证标尺瞬间失效。因此，工程上的稳健策略是<strong>两步走</strong>：
+1. <strong>第一阶段（搬家）</strong>：把 JSON 存储代码原封不动搬入 <code>storage.py</code>，保持功能 100% 不变，验证通过后形成一个独立的 Git 提交。
+2. <strong>第二阶段（装修）</strong>：将 <code>storage.py</code> 内部彻底替换为 SQLite 实现，此时 <code>main.py</code> 几乎无需任何改动。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_40.png" alt="两阶段工程策略：先搬家后装修" loading="lazy">
+  <p class="video-caption">📷 两阶段工程策略：先搬家后装修<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=460" target="_blank" rel="noopener">在 B 站中打开 (00:07:40)</a></p>
+</div>
+
+<hr />
+<h2 id="storagepy">三、第一阶段（搬家）：抽离 <code>storage.py</code> 存储模块</h2>
+<p><em>(参考时间: 08:30 - 16:00)</em></p>
+<h3 id="1-backendstoragepy">1. 新建 <code>backend/storage.py</code> 并迁入文件存储代码</h3>
+<p>在 <code>backend/</code> 目录下创建 <code>storage.py</code>，将原本混杂在 <code>main.py</code> 中的存储相关资产完整迁移过来：</p>
+<pre class="highlight"><code class="language-python"># backend/storage.py (第一阶段: 原样搬迁版)
+import json
+from pathlib import Path
+
+# 持久化数据文件路径常量
+HISTORY_FILE = Path(__file__).parent / &quot;history.json&quot;
+
+def load_history():
+    &quot;&quot;&quot;读取并反序列化完整的历史记录列表&quot;&quot;&quot;
+    if not HISTORY_FILE.exists():
+        return []
+    try:
+        with open(HISTORY_FILE, &quot;r&quot;, encoding=&quot;utf-8&quot;) as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+def save_record(record: dict):
+    &quot;&quot;&quot;追加写入单条分析记录&quot;&quot;&quot;
+    history = load_history()
+    history.append(record)
+    with open(HISTORY_FILE, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+def get_history():
+    &quot;&quot;&quot;获取格式化后的最近历史记录列表&quot;&quot;&quot;
+    records = load_history()
+    records.reverse()  # 逆序排布，最新的排在最前
+    return records[:2]  # 原接口中内嵌的切片逻辑
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_35.png" alt="storage.py原样迁入存储逻辑" loading="lazy">
+  <p class="video-caption">📷 storage.py原样迁入存储逻辑<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=575" target="_blank" rel="noopener">在 B 站中打开 (00:09:35)</a></p>
+</div>
+
+<h3 id="2-mainpy">2. 净化 <code>main.py</code>：仅引入存储接口</h3>
+<p>在 <code>backend/main.py</code> 中移除 <code>import json</code> 和底层读写逻辑，通过模块导入消费存储能力：</p>
+<pre class="highlight"><code class="language-python"># backend/main.py 顶部引入
+from storage import save_record, get_history
+
+# /api/history 路由函数被大幅精炼
+@app.get(&quot;/api/history&quot;)
+def read_history():
+    return get_history()
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_45.png" alt="main.py精炼后仅保留接口层职责" loading="lazy">
+  <p class="video-caption">📷 main.py精炼后仅保留接口层职责<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=705" target="_blank" rel="noopener">在 B 站中打开 (00:11:45)</a></p>
+</div>
+
+<h3 id="3_1">3. 第一阶段验证：外部行为完全一致</h3>
+<p>重启 FastAPI 后端服务（避免热更新未捕获模块新增）：
+1. 在前端页面输入并提交测试文本：<code>“生活没有标准答案，但每一天都值得认真感受”</code>。
+2. 访问 <code>http://localhost:8000/api/history</code> 检查返回的 JSON 数据。
+3. 查验本地 <code>history.json</code> 文件已成功写入新记录。</p>
+<p>验证表明：<strong>系统功能与数据流与拆分前毫无二致，“搬家”成功！</strong></p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_13_55.png" alt="搬迁后接口全链路验证" loading="lazy">
+  <p class="video-caption">📷 搬迁后接口全链路验证<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=835" target="_blank" rel="noopener">在 B 站中打开 (00:13:55)</a></p>
+</div>
+
+<hr />
+<h2 id="limit">四、深化架构边界：<code>LIMIT</code> 分页截断的决定权归属</h2>
+<p><em>(参考时间: 16:00 - 22:30)</em></p>
+<p>在完成文件搬迁后，我们重新审视 <code>storage.py</code> 中的 <code>get_history()</code> 函数：</p>
+<pre class="highlight"><code class="language-python">def get_history():
+    records = load_history()
+    records.reverse()
+    return records[:2]  # 思考：这里的硬编码 [:2] 是否合理？
+</code></pre>
+
+<h3 id="1-vs">1. 动作权 vs 决定权</h3>
+<ul>
+<li><strong>执行动作（Action）</strong>：从底层读取数据、逆序排布、只截取前 $N$ 条，这是存储层的职责（在 SQL 中对应 <code>ORDER BY ... LIMIT ?</code>）。</li>
+<li><strong>决定数量（Decision）</strong>：到底展示 2 条、10 条还是 50 条？<strong>这个决定权绝对不属于存储层</strong>！</li>
+<li>存储层不感知客户端究竟是屏幕狭小的手机端、还是大屏桌面端；</li>
+<li>存储层更不感知 UI 页面为历史记录区域分配了多大的展示高度。</li>
+</ul>
+<p>如果把数量写死在存储层，未来移动端若需要展示 5 条记录，就不得不去修改底层的 <code>storage.py</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_35.png" alt="硬编码截断数量的职责归属审视" loading="lazy">
+  <p class="video-caption">📷 硬编码截断数量的职责归属审视<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1055" target="_blank" rel="noopener">在 B 站中打开 (00:17:35)</a></p>
+</div>
+
+<h3 id="2">2. 控制反转：将决定权交还调用方</h3>
+<p>重构方案是：为 <code>get_history()</code> 引入显式参数 <code>limit: int</code>，存储层只执行命令，数量由上层调用者裁定：</p>
+<pre class="highlight"><code class="language-python"># backend/storage.py
+def get_history(limit: int):
+    &quot;&quot;&quot;存储层仅负责根据传入的 limit 参数执行截断&quot;&quot;&quot;
+    records = load_history()
+    records.reverse()
+    return records[:limit]
+
+# backend/main.py
+@app.get(&quot;/api/history&quot;)
+def read_history():
+    &quot;&quot;&quot;接口层作为调用方，明确指定业务所需的数据量&quot;&quot;&quot;
+    return get_history(limit=10)
+</code></pre>
+
+<p>通过这一调整，我们理顺了组件间的职责契约，为下一步将切片动作映射到 SQL <code>LIMIT</code> 语句铺平了道路。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_25.png" alt="为get_history引入limit参数完成解耦" loading="lazy">
+  <p class="video-caption">📷 为get_history引入limit参数完成解耦<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1225" target="_blank" rel="noopener">在 B 站中打开 (00:20:25)</a></p>
+</div>
+
+<hr />
+<h2 id="storagepy-sqlite">五、第二阶段（装修）：<code>storage.py</code> 全面接入 SQLite</h2>
+<p><em>(参考时间: 22:30 - 31:30)</em></p>
+<p>架构边界清晰后，我们正式执行第二阶段“装修”，在保持对外函数签名不变的前提下，将 <code>backend/storage.py</code> 的底层驱动完整切换为 SQLite。</p>
+<pre class="highlight"><code class="language-mermaid">classDiagram
+    class StorageModule {
+        +DB_FILE : Path
+        +get_conn() Connection
+        +init_db() void
+        +save_record(record: dict) void
+        +get_history(limit: int) list
+    }
+    note for StorageModule &quot;对外公开契约保持稳定&lt;br/&gt;内部逻辑全量换血为 SQL 驱动&quot;
+</code></pre>
+
+<p>六处关键改造规划如下：
+1. <strong>替换驱动库</strong>：移除 <code>json</code>，引入标准库 <code>sqlite3</code>。
+2. <strong>定义连接池辅助函数</strong>：封装 <code>get_conn()</code> 并注入 <code>row_factory</code>。
+3. <strong>实现幂等性建表</strong>：编写 <code>init_db()</code> 初始化 <code>history</code> 数据表。
+4. <strong>改造写入逻辑</strong>：在 <code>save_record()</code> 中使用参数化 <code>INSERT</code> 替换文件追加。
+5. <strong>改造读取逻辑</strong>：在 <code>get_history()</code> 中使用 <code>ORDER BY ... LIMIT ?</code> 单行 SQL 替换内存全量排序。
+6. <strong>清理废弃函数</strong>：安全移除已无调用方的 <code>load_history()</code>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_05.png" alt="storage.py六处改造方案总览" loading="lazy">
+  <p class="video-caption">📷 storage.py六处改造方案总览<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1385" target="_blank" rel="noopener">在 B 站中打开 (00:23:05)</a></p>
+</div>
+
+<h3 id="1_1">1. 连接管理与字典化游标配置</h3>
+<pre class="highlight"><code class="language-python">import sqlite3
+from pathlib import Path
+
+DB_FILE = Path(__file__).parent / &quot;history.db&quot;
+
+def get_conn():
+    &quot;&quot;&quot;建立数据库连接，并配置 Row 工厂以实现字典化按列名访问&quot;&quot;&quot;
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row  # 关键：让查询结果以类似字典的对象返回
+    return conn
+</code></pre>
+
+<blockquote>
+<p>[!NOTE] 为什么必须配置 <code>conn.row_factory = sqlite3.Row</code>？
+默认情况下，SQLite 查询返回的是纯元组（如 <code>(1, '你好', 0.8)</code>）。必须依靠下标访问。配置 <code>sqlite3.Row</code> 之后，既可以通过索引也可以通过列名 <code>row["text"]</code> 直接读取，极大提升了代码的可读性与向后兼容性。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_24_20.png" alt="get_conn与row_factory配置" loading="lazy">
+  <p class="video-caption">📷 get_conn与row_factory配置<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1460" target="_blank" rel="noopener">在 B 站中打开 (00:24:20)</a></p>
+</div>
+
+<h3 id="2-init_db">2. 幂等建表函数 <code>init_db()</code></h3>
+<p>数据库不能像文件那样无序写入，必须在写入前确立 Schema。我们在应用代码中统一管理建表 DDL：</p>
+<pre class="highlight"><code class="language-python">def init_db():
+    &quot;&quot;&quot;初始化数据库与数据表，具备幂等性 (IF NOT EXISTS)&quot;&quot;&quot;
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute('''
+    CREATE TABLE IF NOT EXISTS history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT,
+        score REAL,
+        label TEXT,
+        pinyin TEXT,
+        created_at TEXT
+    )
+    ''')
+    conn.commit()
+    conn.close()
+</code></pre>
+
+<blockquote>
+<p>[!TIP] 幂等性设计（Idempotence）
+引入 <code>IF NOT EXISTS</code> 关键字后，系统每次启动时执行建表语句均绝对安全：表不存在时创建，表已存在时静默跳过，避免重复建表抛出异常。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_26_35.png" alt="init_db建表DDL语句详解" loading="lazy">
+  <p class="video-caption">📷 init_db建表DDL语句详解<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1595" target="_blank" rel="noopener">在 B 站中打开 (00:26:35)</a></p>
+</div>
+
+<h3 id="3-save_record">3. 参数化插入记录 <code>save_record()</code></h3>
+<pre class="highlight"><code class="language-python">def save_record(record: dict):
+    &quot;&quot;&quot;将文本分析记录安全插入数据库&quot;&quot;&quot;
+    conn = get_conn()
+    cur = conn.cursor()
+    # 严格采用 ? 占位符传递参数，杜绝 SQL 注入漏洞
+    cur.execute('''
+    INSERT INTO history (text, score, label, pinyin, created_at)
+    VALUES (?, ?, ?, ?, ?)
+    ''', [
+        record.get(&quot;text&quot;),
+        record.get(&quot;score&quot;),
+        record.get(&quot;label&quot;),
+        record.get(&quot;pinyin&quot;),
+        record.get(&quot;created_at&quot;)
+    ])
+    conn.commit()
+    conn.close()
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_27_35.png" alt="参数化INSERT语句安全防注入" loading="lazy">
+  <p class="video-caption">📷 参数化INSERT语句安全防注入<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1655" target="_blank" rel="noopener">在 B 站中打开 (00:27:35)</a></p>
+</div>
+
+<h3 id="4-get_history">4. 声明式高效查询 <code>get_history()</code></h3>
+<pre class="highlight"><code class="language-python">def get_history(limit: int = 10):
+    &quot;&quot;&quot;利用 SQL 内核高效检索最新的 N 条历史记录&quot;&quot;&quot;
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute('''
+    SELECT * FROM history 
+    ORDER BY created_at DESC 
+    LIMIT ?
+    ''', [limit])
+    rows = cur.fetchall()
+    conn.close()
+
+    # 将 sqlite3.Row 映射为通用字典列表，适配 FastAPI JSON 序列化
+    return [dict(row) for row in rows]
+</code></pre>
+
+<p>对比旧版文件操作，这一行 SQL 将“全盘读取”、“内存倒排”、“切片截断”的所有繁琐计算全部下沉至 C 语言编写的 SQLite 高性能内核中，彻底摆脱了应用层 OOM 风险。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_29_20.png" alt="get_history声明式SQL高效查询" loading="lazy">
+  <p class="video-caption">📷 get_history声明式SQL高效查询<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1760" target="_blank" rel="noopener">在 B 站中打开 (00:29:20)</a></p>
+</div>
+
+<hr />
+<h2 id="mainpy_1">六、<code>main.py</code> 接入初始化与系统全链路联调</h2>
+<p><em>(参考时间: 31:30 - 35:10)</em></p>
+<p>在 <code>backend/main.py</code> 中引入 <code>init_db</code> 并在应用全局启动时完成数据库表的就绪检查：</p>
+<pre class="highlight"><code class="language-python"># backend/main.py
+from fastapi import FastAPI
+from storage import init_db, save_record, get_history
+
+app = FastAPI()
+
+# 服务启动时即刻初始化数据库 Schema
+init_db()
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_32_10.png" alt="main.py启动阶段调用init_db" loading="lazy">
+  <p class="video-caption">📷 main.py启动阶段调用init_db<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=1930" target="_blank" rel="noopener">在 B 站中打开 (00:32:10)</a></p>
+</div>
+
+<h3 id="gui">全链路联调与 GUI 核查</h3>
+<ol>
+<li>重启 FastAPI 服务，终端无任何异常报错。</li>
+<li>在前端 Web 页面输入新文本：<code>“今晚月色真美”</code>，点击提交。</li>
+<li>接口顺利响应分析结果，下方历史记录区域即时呈现出最新记录。</li>
+<li>使用 <strong>DB Browser for SQLite</strong> 打开新生成的 <code>backend/history.db</code> 文件，切换到 <strong>Browse Data</strong> 视图，可以清晰看到数据库已经自动分配了自增主键 <code>id</code>，数据整齐规整地存入表中。</li>
+</ol>
+<blockquote>
+<p>[!NOTE] 契约向前兼容
+虽然接口返回的记录中新增了 <code>id</code> 字段，但在 RESTful API 设计中，<strong>向响应中增加非破坏性字段完全符合契约兼容原则</strong>，原有的前端应用依然平稳运行，零代码改动！</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_00.png" alt="DB Browser可视化核验history表数据与自增ID" loading="lazy">
+  <p class="video-caption">📷 DB Browser可视化核验history表数据与自增ID<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=2040" target="_blank" rel="noopener">在 B 站中打开 (00:34:00)</a></p>
+</div>
+
+<hr />
+<h2 id="git">七、生产级工程规范：数据不进 Git 与老资产清理</h2>
+<p><em>(参考时间: 35:10 - 37:25)</em></p>
+<p>数据库改造完成后，必须遵循专业团队的软件工程基准进行收尾。</p>
+<h3 id="1-git">1. 软件工程铁律：数据不进 Git 代码仓库</h3>
+<p>物理文件 <code>backend/history.db</code> 是服务在运行时动态产生的<strong>运行时状态数据（State/Data）</strong>。
+- 源代码（Code）属于版本控制的资产；
+- 数据（Data）具有环境隔离性（开发、测试、生产各自拥有独立的真实数据），绝不能混入 Git 仓库中。</p>
+<p>我们在项目根目录的 <code>.gitignore</code> 中追加一行规则：</p>
+<pre class="highlight"><code class="language-gitignore"># 忽略 SQLite 物理数据库文件
+backend/*.db
+backend/*.sqlite3
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_36_00.png" alt="gitignore配置数据库排除规则" loading="lazy">
+  <p class="video-caption">📷 gitignore配置数据库排除规则<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=2160" target="_blank" rel="noopener">在 B 站中打开 (00:36:00)</a></p>
+</div>
+
+<h3 id="2_1">2. 废弃文件清理与历史数据迁移的思考</h3>
+<ul>
+<li><strong>清理过渡资产</strong>：在项目中执行 <code>git rm backend/history.json</code>，将旧版文件存储资产安全下线。</li>
+<li><strong>工业界数据迁移（Data Migration）的现实要求</strong>：在本课程实验中，由于是尚未上线的开发原型，我们可以直接丢弃 <code>history.json</code> 中的历史数据。但在生产环境中，<strong>数据迁移是一项极其严肃的核心工程</strong>，必须编写严格的迁移脚本（Migration Script），确保旧有成千上万条历史数据 100% 格式对齐并完整入库，容不得半点差池。</li>
+</ul>
+<hr />
+<h2 id="orm">八、架构拓展视野：ORM（对象关系映射）核心机理</h2>
+<p><em>(参考时间: 37:25 - 39:50)</em></p>
+<p>在大型现代后端项目中，很多团队并不推荐在 Python 逻辑中手写原生 SQL 字符串，而是广泛使用 <strong>ORM（Object-Relational Mapping，对象关系映射）</strong> 框架（如 FastAPI 官方力推的 <code>SQLModel</code>，以及 <code>SQLAlchemy</code>、Django ORM 等）。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    subgraph 开发者编写的面向对象代码
+        A[&quot;class History(SQLModel, table=True):&lt;br/&gt;    id: int | None = Field(default=None, primary_key=True)&lt;br/&gt;    text: str&lt;br/&gt;    score: float&quot;]
+    end
+    subgraph ORM 框架层 (SQLModel / SQLAlchemy)
+        B[对象关系映射引擎]
+        B --&gt;|自动编译转换| C[&quot;SQL 语句生成器:&lt;br/&gt;INSERT INTO history ...&lt;br/&gt;SELECT * FROM history WHERE ...&quot;]
+    end
+    subgraph 底层数据库内核
+        D[(SQLite / PostgreSQL 存储引擎)]
+    end
+    A --&gt; B
+    C --&gt;|发送二进制协议| D
+</code></pre>
+
+<p>ORM 的核心价值在于：
+- <strong>用面向对象编程（OOP）统一数据操作</strong>：开发者无需脱离 Python 语法上下文，直接实例化类、修改属性即可完成数据库变更。
+- <strong>自动适配多方言</strong>：编写一套 ORM 模型，底层无论是 SQLite、MySQL 还是 PostgreSQL，框架会自动翻译为对应的 SQL 方言。
+- <strong>但底层的本质依然是 SQL</strong>：数据库引擎永远只认识并执行原生 SQL。理解手写 SQL 的运行机制，是真正掌握并驾驭 ORM 的基石。</p>
+<hr />
+<h2 id="_3">九、高频查询优化：在代码中声明式创建索引</h2>
+<p><em>(参考时间: 39:50 - 44:00)</em></p>
+<p>在业务中，每次拉取历史记录都必须执行 <code>ORDER BY created_at DESC</code>。当数据表积攒到几十万条后，排序将成为严重的性能瓶颈。</p>
+<h3 id="1-init_db">1. 在 <code>init_db()</code> 中声明式引入索引</h3>
+<p>为践行“代码即基础设施”的规范，避免在生产环境中依赖运维人员通过 GUI 手动执行命令，我们在 <code>init_db()</code> 中同步追加索引创建 DDL：</p>
+<pre class="highlight"><code class="language-python">def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+    # 1. 幂等创建数据表
+    cur.execute('''
+    CREATE TABLE IF NOT EXISTS history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT,
+        score REAL,
+        label TEXT,
+        pinyin TEXT,
+        created_at TEXT
+    )
+    ''')
+    # 2. 幂等创建基于 created_at 的排序检索索引
+    cur.execute('''
+    CREATE INDEX IF NOT EXISTS idx_history_created_at 
+    ON history(created_at)
+    ''')
+    conn.commit()
+    conn.close()
+</code></pre>
+
+<p>按照业界命名惯例，索引通常命名为 <code>idx_&lt;表名&gt;_&lt;字段名&gt;</code>（如 <code>idx_history_created_at</code>）。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_42_15.png" alt="init_db中声明式创建索引并在GUI中核实" loading="lazy">
+  <p class="video-caption">📷 init_db中声明式创建索引并在GUI中核实<br><a href="https://www.bilibili.com/video/BV1s94X6cEvx?t=2535" target="_blank" rel="noopener">在 B 站中打开 (00:42:15)</a></p>
+</div>
+
+<p>重启后端服务后，在 DB Browser for SQLite 界面刷新，可以清晰看到 <code>history</code> 表结构下方已成功挂载了 <code>idx_history_created_at</code> 索引节点。</p>
+<hr />
+<h2 id="_4">十、总结与下一阶段演进：会话与状态隔离</h2>
+<p><em>(参考时间: 44:00 - 45:51)</em></p>
+<p>本讲我们完成了一场极具工程教科书意义的系统重构：
+1. <strong>理顺了系统分层</strong>：将单一的 <code>main.py</code> 拆分为接口层与专职的 <code>storage.py</code> 存储模块，杜绝逻辑耦合。
+2. <strong>践行了重构准则</strong>：通过“先搬家、后装修”两阶段策略，以“外部行为不变”为标尺，稳健推进架构换血。
+3. <strong>拥抱了现代数据库</strong>：利用 SQLite、事务原子性、参数化防注入、字典化游标与索引机制，彻底革新了持久层体系。</p>
+<h3 id="_5">现有系统的遗留痛点与下节预告</h3>
+<p>此时系统依然存在一个严重的业务缺陷：<strong>所有访客的历史记录全部混在同一张 <code>history</code> 表内，任何人请求 <code>/api/history</code> 看到的都是全站所有人的分析历史</strong>！</p>
+<p>在接下来的第 29 讲（模块收官之作）中，我们将引入现代 Web 的核心机制——<strong>会话与状态（Cookie / Session）</strong>，为每一位访问者颁发专属的身份标识，让每个人在页面上只能看到属于自己的分析足迹！</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
