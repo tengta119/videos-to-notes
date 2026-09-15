@@ -45,6 +45,13 @@ import re
 import subprocess
 import sys
 
+if sys.platform == "win32":
+    import io
+    if hasattr(sys.stdout, "buffer"):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "buffer"):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 from extract_frames import materialize
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
