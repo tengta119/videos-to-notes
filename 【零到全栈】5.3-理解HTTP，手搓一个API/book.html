@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -294,7 +298,8 @@
 <p>在前面两讲中，我们完成了 API 基础概念的建立，并在本地成功配置了 Python 隔离运行环境。但直到上一节为止，我们编写的代码（无论终端中的 <code>curl</code> 还是 Python 脚本中的 <code>requests.get</code>）始终站在<strong>调用方（Client / 客户端）</strong>的视角。</p>
 <p>从本节开始，我们将发生根本性的视角转变——<strong>成为被调用方（Server / 服务端）</strong>。我们要编写一个守在服务器端口上的后端程序，等待外界发来请求并作出正确回应。</p>
 <p>为了让服务端与形形色色的客户端顺畅交流，双方必须遵守同一套世界通用的网络对话规约——<strong>HTTP 协议（HyperText Transfer Protocol）</strong>。本节我们将通过理论剖析、<code>curl -v</code> 报文透视以及 Python 标准库原生“手搓”一个 API，彻底打通网络协议底层的任督二脉。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     subgraph ClientSide [&quot;调用方 (Client)&quot;]
         Browser[&quot;Web 浏览器&quot;]
         TerminalCurl[&quot;curl 命令行&quot;]
@@ -319,7 +324,7 @@
     JSONData --&gt; PythonHandler
     PythonHandler --&gt; RespMsg
     RespMsg --&gt;|2. 返回 Response| ClientSide
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1">1. 视角的转变：从调用方跨入被调用方</h2>
@@ -343,7 +348,8 @@
   <p class="video-caption">📷 HTTP 请求与响应的四段式对称结构图解<br><a href="https://www.bilibili.com/video/BV1jzKK6aExw?t=205" target="_blank" rel="noopener">在 B 站中打开 (00:03:25)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">classDiagram
+<pre class="mermaid">
+classDiagram
     class HTTP_Request {
         +第1部分: 请求行 (Request Line: 方法 + 路径 + 协议版本)
         +第2部分: 请求头 (Headers: 键值对元信息)
@@ -357,7 +363,7 @@
         +第3部分: 空行 (CRLF 边界隔离符)
         +第4部分: 响应体 (Body: 返回的数据正文, 如 JSON/HTML)
     }
-</code></pre>
+</pre>
 
 <h3 id="_1">请求报文的四个部件</h3>
 <ol>
@@ -495,7 +501,8 @@
 </div>
 
 <p>面对如此繁琐的 HTTP 规约，作为一名服务端编写者，哪些是必须处理的硬性指标？</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph MustHandle [&quot;服务端必须实现的核心规范 (缺一不可)&quot;]
         M1[&quot;1. 解析请求行 (识别 Method 与 Path)&quot;]
         M2[&quot;2. 写入状态行 (必须包含 HTTP 状态码, 如 200/404)&quot;]
@@ -503,7 +510,7 @@
         M4[&quot;4. 输出空行 (声明 Headers 结束, 区分正文)&quot;]
         M5[&quot;5. 写入响应体 (业务 JSON 字符串)&quot;]
     end
-</code></pre>
+</pre>
 
 <ol>
 <li><strong>必须读取请求方法与路径</strong>：如果不判断路径与方法，就无法区分来访者要访问哪个接口；</li>
@@ -682,27 +689,50 @@ git commit -m &quot;feat: 手搓一个基础 HTTP API&quot;
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
