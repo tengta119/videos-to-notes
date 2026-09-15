@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 23 讲：前后端联调和 CORS（5.5）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="23-cors55">第 23 讲：前后端联调和 CORS（5.5）</h1>
+<p>在之前的章节中，我们已经分别完成了两项独立工程：
+1. <strong>前端工程</strong>：基于 Next.js 开发的高颜值响应式个人作品集与文字实验室界面，但页面上展示的文本仍然写死在静态的 <code>site.js</code> 中；
+2. <strong>后端工程</strong>：基于 FastAPI 构建了两个接口——<code>GET /api/profile</code>（获取个人主页数据）与 <code>POST /api/analyze</code>（提交文本并进行校验与多维度分析），但此前仅在终端中使用 <code>curl</code> 进行过单元调试。</p>
+<p>此时此刻，前端与后端犹如两个各自能跑、却互不相识的独立王国。</p>
+<p>本节我们将正式拉开<strong>前后端集成联调（Integration）</strong>的序幕，让运行在浏览器中的前端脚本跨越端口向后端发起真实请求。在此过程中，我们将直面现代 Web 全栈开发中最著名的经典门槛——<strong>跨源资源共享（CORS）</strong>与 <strong>OPTIONS 预检（Preflight）机制</strong>，并建立生产级的环境变量集中配置体系。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph FrontendApp [&quot;前端应用 (Next.js 客户端)&quot;]
+        direction TB
+        BrowserPage[&quot;浏览器页面 (http://localhost:3000)&quot;]
+        FetchModule[&quot;动态 fetch() 异步请求模块&quot;]
+        EnvConfig[&quot;.env.local 环境变量注入&quot;]
+        EnvConfig --&gt; FetchModule
+        BrowserPage --&gt; FetchModule
+    end
+
+    subgraph SecurityBorder [&quot;浏览器安全屏障 (SOP 同源策略)&quot;]
+        direction TB
+        CheckOrigin{&quot;检查协议、域名、端口是否一致?&quot;}
+        OriginHeader[&quot;注入 Origin: http://localhost:3000&quot;]
+        PreflightCheck{&quot;复杂请求触发 OPTIONS 预检?&quot;}
+        CORSResponse{&quot;后端是否返还 Access-Control-Allow-Origin?&quot;}
+
+        CheckOrigin --&gt;|跨源| OriginHeader
+        OriginHeader --&gt; PreflightCheck
+        PreflightCheck --&gt; CORSResponse
+    end
+
+    subgraph BackendApp [&quot;后端服务 (FastAPI 异步微服务)&quot;]
+        direction TB
+        ListenPort[&quot;监听 http://localhost:8000&quot;]
+        CORSMiddleware[&quot;FastAPI CORSMiddleware 守门中间件&quot;]
+        ProfileRoute[&quot;GET /api/profile 个人信息接口&quot;]
+        AnalyzeRoute[&quot;POST /api/analyze 文本分析接口&quot;]
+
+        ListenPort --&gt; CORSMiddleware
+        CORSMiddleware --&gt; ProfileRoute
+        CORSMiddleware --&gt; AnalyzeRoute
+    end
+
+    FetchModule --&gt; SecurityBorder
+    SecurityBorder &lt;--&gt;|HTTP 报文交互| BackendApp
+    CORSResponse --&gt;|校验通过，解除拦截| BrowserPage
+</code></pre>
+
+<hr />
+<h2 id="1">1. 联调准备：双进程常驻与调试环境规划</h2>
+<p><em>(参考时间: 01:10)</em></p>
+<p>前后端分离架构的调试，必须在本地操作系统中<strong>同时并行运行两个服务进程</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_00_45.png" alt="本节联调架构大纲与两类接口流程" loading="lazy">
+  <p class="video-caption">📷 本节联调架构大纲与两类接口流程<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=45" target="_blank" rel="noopener">在 B 站中打开 (00:00:45)</a></p>
+</div>
+
+<ul>
+<li><strong>前端开发服务器</strong>：运行在 <code>http://localhost:3000</code>（由 Next.js 驱动）；</li>
+<li><strong>后端 API 服务器</strong>：运行在 <code>http://localhost:8000</code>（由 FastAPI / Uvicorn 驱动）。</li>
+</ul>
+<p>为了便于左右对比观测控制台日志，我们可以开启两个终端窗口。视频中演示使用了支持分屏特性的现代化终端工具 <strong>Ghostty</strong>，也可以直接在 VS Code 内部通过拆分终端（Split Terminal）实现双屏监控：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_01_50.png" alt="Ghostty 双终端分屏并行运行前端与后端" loading="lazy">
+  <p class="video-caption">📷 Ghostty 双终端分屏并行运行前端与后端<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=110" target="_blank" rel="noopener">在 B 站中打开 (00:01:50)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-bash"># 终端 1：启动前端 Next.js 服务
+cd zero-to-tech
+npm run dev
+
+# 终端 2：启动后端 FastAPI 服务
+cd zero-to-tech/backend
+fastapi dev
+</code></pre>
+
+<hr />
+<h2 id="2">2. 丰富后端接口：同步真实页面完整字段</h2>
+<p><em>(参考时间: 03:00)</em></p>
+<p>在第 22 讲中，为了讲解极简入门，我们的 <code>profile</code> 字典仅包含了 <code>heroTitle</code> 和 <code>heroSubtitle</code>。但前端主页要呈现完整的个人名片、关于我、作品列表等内容，数据字段远比这两个字段丰富。</p>
+<p>我们将原本静态的 <code>data/site.js</code> 中的 <code>home</code> 结构完整迁移至后端的 <code>main.py</code> 中，并刻意将主标题微调为 <strong><code>"关于我（来自后端）"</code></strong> 作为视觉锚点，以便在浏览器中一目了然地确认数据是否真正来源于后端：</p>
+<pre class="highlight"><code class="language-python">from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class AnalyzeRequest(BaseModel):
+    text: str
+
+profile = {
+    &quot;heroTitle&quot;: &quot;关于我（来自后端）&quot;,
+    &quot;heroSubtitle&quot;: &quot;项目, 创意, 灵感, 心得, 我的作品&quot;,
+    &quot;about&quot;: &quot;这里是一段从后端 API 动态获取并实时渲染的个人简介内容...&quot;,
+    &quot;projects&quot;: [
+        {&quot;title&quot;: &quot;全栈教程&quot;, &quot;desc&quot;: &quot;从零单排全栈技术体系&quot;, &quot;link&quot;: &quot;/course&quot;},
+        {&quot;title&quot;: &quot;文字实验室&quot;, &quot;desc&quot;: &quot;基于 AI 与 NLP 的文本情感分析&quot;, &quot;link&quot;: &quot;/lab&quot;}
+    ]
+}
+
+@app.get(&quot;/api/profile&quot;)
+def get_profile():
+    return profile
+
+@app.post(&quot;/api/analyze&quot;)
+def analyze(req: AnalyzeRequest):
+    return {
+        &quot;text&quot;: req.text,
+        &quot;score&quot;: 0.5,
+        &quot;label&quot;: &quot;偏平静&quot;,
+        &quot;pinyin&quot;: &quot;（模块 6 再说）&quot;,
+    }
+</code></pre>
+
+<p>保存后，后端 Uvicorn 触发热更新。在终端使用 <code>curl</code> 验证：</p>
+<pre class="highlight"><code class="language-bash">curl http://localhost:8000/api/profile
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_45.png" alt="curl 验证后端返回包含来自后端的完整 JSON" loading="lazy">
+  <p class="video-caption">📷 curl 验证后端返回包含来自后端的完整 JSON<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=285" target="_blank" rel="noopener">在 B 站中打开 (00:04:45)</a></p>
+</div>
+
+<p>后端接口就绪，返回数据无误！</p>
+<hr />
+<h2 id="3-fetch">3. 前端客户端组件重构：从静态到动态 <code>fetch</code></h2>
+<p><em>(参考时间: 06:20)</em></p>
+<p>接下来改造前端。前端原本的代码直接静态导入了本地 JS 文件，现在需要改为在浏览器中动态向 <code>http://localhost:8000</code> 发起网络请求。</p>
+<p>我们将课程官方提供的联调示例组件（包含 <code>HomeView.tsx</code>、<code>InputCard.tsx</code>、<code>ResultCard.tsx</code> 等）覆盖至前端项目对应的目录中：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_08_35.png" alt="将联调专用前端示例文件覆盖导入项目中" loading="lazy">
+  <p class="video-caption">📷 将联调专用前端示例文件覆盖导入项目中<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=515" target="_blank" rel="noopener">在 B 站中打开 (00:08:35)</a></p>
+</div>
+
+<h3 id="_1">核心改造点解析</h3>
+<ol>
+<li><strong><code>use client</code> 声明</strong>：
+   在 Next.js App Router 中，默认的 Server Components 无法直接使用浏览器特定的事件监听和生命周期钩子。为了在用户浏览器中执行 <code>fetch</code> 请求并用 <code>useState</code> / <code>useEffect</code> 驱动 UI 重新渲染，文件首行必须显式标记 <code>'use client'</code>。</li>
+<li><strong>渐进式数据降级（Graceful Degradation）</strong>：
+   在请求发起且后端尚未返回的短暂空窗期内，组件依然保留本地 <code>site.js</code> 中的默认数据进行“骨架占位”，避免页面在首屏出现刺眼的闪烁或空白。</li>
+<li><strong>事件驱动 POST</strong>：
+   在文字实验室的 <code>InputCard</code> 中，用户点击“开始分析”按钮后，将文本框中的内容组装为 JSON 载荷，通过 <code>fetch('http://localhost:8000/api/analyze', { method: 'POST', ... })</code> 发送至后端。</li>
+</ol>
+<hr />
+<h2 id="4">4. 第一次翻车：排查三现场诊断法</h2>
+<p><em>(参考时间: 11:10)</em></p>
+<p>按理说前后端都已编写完备，此时打开浏览器访问 <code>http://localhost:3000</code>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_20.png" alt="前端页面渲染后数据依然保持旧貌且控制台亮红" loading="lazy">
+  <p class="video-caption">📷 前端页面渲染后数据依然保持旧貌且控制台亮红<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=680" target="_blank" rel="noopener">在 B 站中打开 (00:11:20)</a></p>
+</div>
+
+<p>页面上的大标题依然是旧内容，并未展示后端的“关于我（来自后端）”！后端明明通过 <code>curl</code> 验证过，前端也是官方代码，数据究竟卡死在了哪一环？</p>
+<blockquote>
+<p>[!TIP]
+<strong>排查全栈网络故障的“三现场排查法”</strong>：
+1. <strong>现场一：浏览器开发者工具 Network 面板</strong>（请求是否真的发出去了？状态码是什么？）
+2. <strong>现场二：服务端的控制台终端</strong>（后端到底有没有收到请求？有没有抛出未捕获异常？）
+3. <strong>现场三：浏览器开发者工具 Console 面板</strong>（数据回到客户端后，浏览器引擎作出了什么裁决？）</p>
+</blockquote>
+<h3 id="network">现场一：查看浏览器 Network 面板</h3>
+<p>在页面按 F12 打开 Network 面板并刷新：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_45.png" alt="Network 面板中清晰记录 profile 请求成功返回 200" loading="lazy">
+  <p class="video-caption">📷 Network 面板中清晰记录 profile 请求成功返回 200<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=765" target="_blank" rel="noopener">在 B 站中打开 (00:12:45)</a></p>
+</div>
+
+<p>我们找到了发往 <code>/api/profile</code> 的网络记录，不仅请求发出去了，而且状态码赫然显示为 <strong><code>200 OK</code></strong>！这证明前端网络逻辑完全正确。</p>
+<h3 id="_2">现场二：查看后端服务端控制台</h3>
+<p>切换到后端的终端窗口：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_05.png" alt="后端控制台打印出了 200 响应日志" loading="lazy">
+  <p class="video-caption">📷 后端控制台打印出了 200 响应日志<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=845" target="_blank" rel="noopener">在 B 站中打开 (00:14:05)</a></p>
+</div>
+
+<p>控制台实时滚出了访问日志：<code>"GET /api/profile HTTP/1.1" 200 -</code>。这证明请求已经到达后端，后端顺利处理并把数据完整推回了网络连接。</p>
+<h3 id="console">现场三：查看浏览器 Console 面板</h3>
+<p>既然一去一回都完成了，为什么页面就是拿不到数据？打开 Console 面板，真相大白：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_50.png" alt="Console 面板中赫然刺目的 CORS 政策拦截红字报错" loading="lazy">
+  <p class="video-caption">📷 Console 面板中赫然刺目的 CORS 政策拦截红字报错<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=890" target="_blank" rel="noopener">在 B 站中打开 (00:14:50)</a></p>
+</div>
+
+<p>屏幕上打印出前端开发者最为熟知的刺目红字：</p>
+<pre class="highlight"><code class="language-text">Access to fetch at 'http://localhost:8000/api/profile' from origin 'http://localhost:3000'
+has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+</code></pre>
+
+<hr />
+<h2 id="5-cors">5. 探秘同源策略与 CORS 本质</h2>
+<p><em>(参考时间: 15:30)</em></p>
+<p>为什么此前用 <code>curl</code> 测试一路绿灯，一换到浏览器就会被无情拦截？</p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>CORS（Cross-Origin Resource Sharing，跨源资源共享）限制是且仅是“浏览器”为了保护最终用户而制定的安全围栏，绝非 HTTP 协议本身的限制，更不是服务端的故障</strong>。
+<code>curl</code>、Postman、Python 脚本等非浏览器工具不受同源策略约束，因此永远不会被 CORS 拦截。</p>
+</blockquote>
+<h3 id="origin">什么是“源”（Origin）？同源三要素</h3>
+<p>对于浏览器而言，一个合法的“源”由三项绝对要素共同界定：</p>
+<pre class="highlight"><code class="language-mermaid">classDiagram
+    class OriginIdentity {
+        +1. 协议 (Protocol: 如 http vs https)
+        +2. 域名 (Domain / Host: 如 localhost vs 127.0.0.1)
+        +3. 端口 (Port: 如 3000 vs 8000)
+    }
+</code></pre>
+
+<p>三者只要有<strong>任意一项不完全一致</strong>，浏览器便将其视为两个互不信任的“不同源（Cross-Origin）”。在我们的联调场景中：
+* 前端页面跑在 <code>http://localhost:3000</code>；
+* 后端服务跑在 <code>http://localhost:8000</code>；
+* 协议相同、域名相同，但<strong>端口不同（3000 ≠ 8000）</strong>，因此构成了典型的跨源调用。</p>
+<h3 id="_3">浏览器拦截的微观过程</h3>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_05.png" alt="CORS 跨源拦截工作流与授权响应头核验" loading="lazy">
+  <p class="video-caption">📷 CORS 跨源拦截工作流与授权响应头核验<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1025" target="_blank" rel="noopener">在 B 站中打开 (00:17:05)</a></p>
+</div>
+
+<ol>
+<li>前端在 <code>localhost:3000</code> 页面内通过 JS 发起请求，浏览器会自动在请求头中盖上公章：
+   <code>http
+   Origin: http://localhost:3000</code></li>
+<li>后端接收请求并返回正常数据；</li>
+<li>响应报文进入浏览器后，<strong>浏览器的同源安全引擎立即执行核验</strong>：它翻遍了响应头，发现服务端<strong>没有返回 <code>Access-Control-Allow-Origin</code> 响应头</strong>；</li>
+<li>浏览器得出结论：“服务端并未显式授权 <code>localhost:3000</code> 的脚本读取该数据”，随即就地拉下电闸，拒绝把已到达内存的数据交给前端 JavaScript，并在控制台抛出 CORS 阻断异常。</li>
+</ol>
+<hr />
+<h2 id="6-fastapi-corsmiddleware">6. 破局之道：FastAPI 中间件与 CORSMiddleware</h2>
+<p><em>(参考时间: 18:30)</em></p>
+<p>解决该问题的钥匙在<strong>服务端</strong>手中：只要后端在响应报文中附带合法的 <code>Access-Control-Allow-Origin</code> 响应头，明确告知浏览器“我允许 <code>http://localhost:3000</code> 读取我的数据”，安全锁便会自动解除。</p>
+<p>如果在每个接口函数里手动写 <code>send_header</code>，项目中有成百上千个接口将不堪重负。FastAPI 提供了优雅的全局管道——<strong>中间件（Middleware）</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_19_15.png" alt="中间件在请求输入与响应输出关口上的必经之路图解" loading="lazy">
+  <p class="video-caption">📷 中间件在请求输入与响应输出关口上的必经之路图解<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1155" target="_blank" rel="noopener">在 B 站中打开 (00:19:15)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    ClientReq[&quot;客户端 HTTP 请求&quot;] --&gt; MW_In[&quot;CORSMiddleware 预处理&quot;]
+    MW_In --&gt; RouteLogic[&quot;FastAPI 业务路由处理&quot;]
+    RouteLogic --&gt; MW_Out[&quot;CORSMiddleware 后置处理&lt;br/&gt;(统一加盖 Access-Control-Allow-Origin 头)&quot;]
+    MW_Out --&gt; ClientResp[&quot;浏览器客户端接收带授权的响应&quot;]
+</code></pre>
+
+<h3 id="fastapi-corsmiddleware">在 FastAPI 中挂载 CORSMiddleware</h3>
+<p>在 <code>zero-to-tech/backend/main.py</code> 中引入并激活中间件：</p>
+<pre class="highlight"><code class="language-python">from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# 挂载 CORS 中间件，向特定前端源开放授权
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[&quot;http://localhost:3000&quot;],  # 白名单放行源
+)
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_45.png" alt="在 main.py 中挂载 CORSMiddleware 并配置白名单" loading="lazy">
+  <p class="video-caption">📷 在 main.py 中挂载 CORSMiddleware 并配置白名单<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1245" target="_blank" rel="noopener">在 B 站中打开 (00:20:45)</a></p>
+</div>
+
+<p>代码保存后，回到浏览器刷新页面：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_21_30.png" alt="刷新页面后大标题成功展示来自后端的最新数据" loading="lazy">
+  <p class="video-caption">📷 刷新页面后大标题成功展示来自后端的最新数据<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1290" target="_blank" rel="noopener">在 B 站中打开 (00:21:30)</a></p>
+</div>
+
+<p>大标题瞬间刷新为 <strong>“关于我（来自后端）”</strong>！检查 Network 面板，Response Headers 中赫然多出了 <code>Access-Control-Allow-Origin: http://localhost:3000</code>，<code>GET</code> 接口成功打通。</p>
+<hr />
+<h2 id="7-options">7. 第二次翻车：文字实验室的神秘 <code>OPTIONS</code> 预检</h2>
+<p><em>(参考时间: 22:30)</em></p>
+<p>主页的 <code>GET</code> 成功了，那文字实验室的 <code>POST</code> 接口如何？</p>
+<p>切换到文字实验室页面，在文本框输入一段文字并点击“开始分析”：
+控制台瞬间再次飘红，页面弹出提示：<code>TypeError: Failed to fetch</code>。</p>
+<p>打开 Network 面板观察发出的请求：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_22_45.png" alt="Network 面板中赫然出现红色的 OPTIONS 请求报错" loading="lazy">
+  <p class="video-caption">📷 Network 面板中赫然出现红色的 OPTIONS 请求报错<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1365" target="_blank" rel="noopener">在 B 站中打开 (00:22:45)</a></p>
+</div>
+
+<p>奇怪的现象发生了：我们在前端代码里明明写的是 <code>method: 'POST'</code>，为什么 Network 面板上记录的不是 <code>POST</code>，而是一个名为 <strong><code>OPTIONS</code></strong> 的请求？且这个 <code>OPTIONS</code> 居然触发了 <code>CORS error</code>！</p>
+<h3 id="vs">简单请求 vs 复杂请求（预检机制）</h3>
+<p>这是浏览器的又一层高级防护。在同源策略规范中，跨源请求被严格划分为两类：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">请求类别</th>
+<th style="text-align: left;">典型特征</th>
+<th style="text-align: left;">浏览器策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>简单请求 (Simple Request)</strong></td>
+<td style="text-align: left;">普通 <code>GET</code> / <code>HEAD</code>，且仅携带最基础的标准头</td>
+<td style="text-align: left;">浏览器<strong>直接发出</strong>真实请求，事后检查响应头</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>复杂请求 (Preflighted Request)</strong></td>
+<td style="text-align: left;"><code>POST</code> / <code>PUT</code> / <code>DELETE</code>，或声明了 <strong><code>Content-Type: application/json</code></strong></td>
+<td style="text-align: left;">浏览器<strong>严禁直接发出真实请求</strong>，必须先派兵探路（预检）</td>
+</tr>
+</tbody>
+</table>
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor Browser as 浏览器
+    participant Middleware as 后端 CORSMiddleware
+    participant API as 后端 analyze 业务逻辑
+
+    Note over Browser: 用户点击“开始分析”，触发 POST application/json
+    Browser-&gt;&gt;Middleware: 1. 自动先行发出 OPTIONS 探路预检请求 (Preflight)
+    Note over Middleware: 核验请求源、方法与头部是否在白名单中
+    alt 预检未通过 (未放行 POST 方法)
+        Middleware--&gt;&gt;Browser: 2. 拒绝授权 (CORS error)
+        Note over Browser: 真实 POST 请求直接胎死腹中，严禁发出!
+    else 预检通过 (放行 POST 与 Headers)
+        Middleware--&gt;&gt;Browser: 2. 返回 200 OK + 允许的方法与头清单
+        Browser-&gt;&gt;API: 3. 正式发出真正的 POST /api/analyze 业务请求
+        API--&gt;&gt;Browser: 4. 返回实际分析结果 JSON
+    end
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_25_50.png" alt="简单请求与复杂请求的预检逻辑机制图解" loading="lazy">
+  <p class="video-caption">📷 简单请求与复杂请求的预检逻辑机制图解<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1550" target="_blank" rel="noopener">在 B 站中打开 (00:25:50)</a></p>
+</div>
+
+<h3 id="_4">为什么必须存在预检？防止不可逆的严重副作用</h3>
+<p>如果是转账或删库的 <code>POST</code> 操作，一旦由于服务端未设防先发了出去，即便浏览器在收到结果后进行 CORS 阻断，<strong>服务端的数据库也已经被彻底修改，覆水难收</strong>！</p>
+<p>因此，对于带有 JSON 载荷的复杂请求，浏览器坚持<strong>宁可先问后发</strong>。先发一个无害的 <code>OPTIONS</code> 方法向服务端打探底细：<em>“我接下来想使用 POST 方法并携带 JSON 请求头，请问你允许吗？”</em></p>
+<p>如果服务端在 <code>OPTIONS</code> 应答中明确点头，浏览器才会放行真正的 <code>POST</code> 载荷；如果不点头，真正的 <code>POST</code> 根本连离开浏览器的机会都没有！</p>
+<hr />
+<h2 id="8">8. 彻底放行：完善中间件的方法与头部白名单</h2>
+<p><em>(参考时间: 29:00)</em></p>
+<p>此前我们的中间件配置仅写了 <code>allow_origins=["http://localhost:3000"]</code>，并没有告诉预检服务允许接收哪些方法和头部。当预检问询 <code>POST</code> 时，中间件只能按照默认策略予以回绝。</p>
+<p>在中间件中追加 <code>allow_methods</code> 声明：</p>
+<pre class="highlight"><code class="language-python">app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[&quot;http://localhost:3000&quot;],
+    allow_methods=[&quot;GET&quot;, &quot;POST&quot;],
+)
+</code></pre>
+
+<blockquote>
+<p>[!NOTE]
+* <strong><code>allow_methods</code></strong>：声明该接口允许被哪些 HTTP 方法跨源调用。当前项目中用到了 <code>GET</code> 和 <code>POST</code>，如实填写即可。
+* <strong>关于 <code>allow_headers</code></strong>：预检其实还会问“能不能带某些请求头”。此处前端携带的 <code>Content-Type: application/json</code> 属于现代浏览器默认安全范围内的常见头，FastAPI / Starlette 中间件对此提供了开箱即用的支持，无需专门声明；将来如果请求要带自定义鉴权头（例如 <code>Authorization: Bearer &lt;token&gt;</code>），才需要在 <code>allow_headers</code> 中显式放行。</p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_29_25.png" alt="中间件完善 allow_methods 与 allow_headers 配置" loading="lazy">
+  <p class="video-caption">📷 中间件完善 allow_methods 与 allow_headers 配置<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1765" target="_blank" rel="noopener">在 B 站中打开 (00:29:25)</a></p>
+</div>
+
+<p>保存后重新在页面点击“开始分析”：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_31_15.png" alt="OPTIONS 与 POST 双双返回 200，分析结果卡片成功点亮" loading="lazy">
+  <p class="video-caption">📷 OPTIONS 与 POST 双双返回 200，分析结果卡片成功点亮<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1875" target="_blank" rel="noopener">在 B 站中打开 (00:31:15)</a></p>
+</div>
+
+<p>Network 面板上连贯出现了两条绿色的 200 记录：
+1. <strong>第 1 条 <code>OPTIONS /api/analyze</code> (200 OK)</strong>：预检成功通过；
+2. <strong>第 2 条 <code>POST /api/analyze</code> (200 OK)</strong>：真实业务请求成功执行！
+页面下方的分析结果卡片瞬间点亮，文字、字数、情感倾向全线实时联动！</p>
+<hr />
+<h2 id="9-ip">9. 工程化规范：告别代码中的 IP 硬编码</h2>
+<p><em>(参考时间: 33:00)</em></p>
+<p>功能虽然全部跑通，但目前的代码中埋藏着一个极其危险的隐患：
+我们在 <code>HomeView.tsx</code> 和 <code>InputCard.tsx</code> 中，直接将 <code>http://localhost:8000</code> 这串 URL 字符串硬编码（Hardcode）写死在了组件内部。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph BadPractice [&quot;反模式：代码内硬编码地址&quot;]
+        CodeComp1[&quot;HomeView.tsx: fetch('http://localhost:8000')&quot;]
+        CodeComp2[&quot;InputCard.tsx: fetch('http://localhost:8000')&quot;]
+        EnvChange[&quot;环境切换 (本地开发 vs 云端部署 1.2.3.4)&quot;]
+        EnvChange --&gt;|必须满项目查找替换，极易遗漏引发 Bug!| CodeComp1
+        EnvChange --&gt;|必须满项目查找替换，极易遗漏引发 Bug!| CodeComp2
+    end
+
+    subgraph BestPractice [&quot;最佳实践：环境变量集中配置&quot;]
+        EnvFile[&quot;.env.local 文件&lt;br/&gt;NEXT_PUBLIC_API_BASE_URL=http://localhost:8000&quot;]
+        ProcessEnv[&quot;process.env.NEXT_PUBLIC_API_BASE_URL&quot;]
+        EnvFile --&gt; ProcessEnv
+        ProcessEnv --&gt; CodeComp1_ISO[&quot;组件 1 读取配置&quot;]
+        ProcessEnv --&gt; CodeComp2_ISO[&quot;组件 2 读取配置&quot;]
+    end
+</code></pre>
+
+<p>在真实生产中，开发机是 <code>localhost:8000</code>，测试机是局域网 IP，云端生产机是顶级域名。如果写死在代码里，每次发布部署都必须修改源码并重新提交 Git，这是重大的工程禁忌。</p>
+<p><strong>规则：配置与代码严格分离</strong>。</p>
+<h3 id="envlocal">创建 <code>.env.local</code> 环境变量文件</h3>
+<p>在前端项目根目录（与 <code>package.json</code> 同级）新建 <code>.env.local</code>：</p>
+<pre class="highlight"><code class="language-env">NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_05.png" alt="在前端根目录下创建 .env.local 集中配置后端基准地址" loading="lazy">
+  <p class="video-caption">📷 在前端根目录下创建 .env.local 集中配置后端基准地址<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=2045" target="_blank" rel="noopener">在 B 站中打开 (00:34:05)</a></p>
+</div>
+
+<blockquote>
+<p>[!NOTE]
+<strong>Next.js 的命名安全边界</strong>：
+变量名必须以 <strong><code>NEXT_PUBLIC_</code></strong> 开头，Next.js 才会允许该配置变量在打包时被打包进客户端浏览器脚本中。普通的无前缀变量仅在 Node.js 服务端可见，以此防止后端私钥泄露。</p>
+</blockquote>
+<h3 id="_5">组件动态读取环境变量</h3>
+<p>在前端组件（如 <code>components/InputCard.jsx</code> 与 <code>components/HomeView.jsx</code>）中统一通过 <code>process.env</code> 读取：</p>
+<pre class="highlight"><code class="language-javascript">// 提取环境变量基准地址
+const API = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+// 动态拼装请求地址
+const res = await fetch(`${API}/api/analyze`, {
+  method: &quot;POST&quot;,
+  headers: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+  body: JSON.stringify({ text }),
+});
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_36_10.png" alt="组件内部改造为读取 process.env 环境变量" loading="lazy">
+  <p class="video-caption">📷 组件内部改造为读取 process.env 环境变量<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=2170" target="_blank" rel="noopener">在 B 站中打开 (00:36:10)</a></p>
+</div>
+
+<blockquote>
+<p>[!IMPORTANT]
+修改了 <code>.env.local</code> 文件后，必须<strong>完全停止并重新启动前端开发服务器（<code>npm run dev</code>）</strong>，新的环境变量才能在 Node.js 启动期被注入。</p>
+</blockquote>
+<p>由于根目录 <code>.gitignore</code> 默认已经包含了 <code>.env*.local</code>，该本地环境配置文件绝不会被意外推送到公共代码仓库中。</p>
+<hr />
+<h2 id="10">10. 模块五全貌复盘与后续规划</h2>
+<p><em>(参考时间: 39:50)</em></p>
+<p>至此，课程的第 5 大模块——<strong>后端与接口体系</strong>宣告圆满收官！我们完整经历了从零到全栈的关键成长跨越：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">课时节点</th>
+<th style="text-align: left;">核心突破点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>5.1 什么是 API</strong></td>
+<td style="text-align: left;">建立调用方与被调用方心智模型，掌握 <code>curl</code> 调试真实世界 API</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>5.2 Python 环境设置</strong></td>
+<td style="text-align: left;">掌握多解释器共存原理，建立 <code>venv</code> 独立沙箱与 <code>pip</code> 依赖版本锁定</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>5.3 理解 HTTP，手搓 API</strong></td>
+<td style="text-align: left;">剖析报文对称性与 <code>curl -v</code> 探秘，原生手搓 <code>http.server</code> 洞悉协议底层</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>5.4 FastAPI 入门</strong></td>
+<td style="text-align: left;">拥抱现代框架生产力，体验声明式路由、Pydantic 校验与 Swagger 自动文档</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>5.5 前后端联调与 CORS</strong></td>
+<td style="text-align: left;">全栈握手，彻底打通同源策略、CORS 中间件配置、OPTIONS 预检与环境变量治理</td>
+</tr>
+</tbody>
+</table>
+<p>在当前的代码中，我们还留有两笔明显的“业务欠账”：
+1. 分析接口中的拼音、情感倾向和打分目前还是假数据；
+2. 用户每次分析完的记录用完即焚，刷新后荡然无存。</p>
+<p>在接下来的第 6 模块中，我们将跨入数据处理与持久化存储领域，引入 Python 生态强大的第三方 NLP 算法库让文本分析成真，并深入学习文件存储与数据库技术，为全栈应用注入真正的持久化生命力！</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
