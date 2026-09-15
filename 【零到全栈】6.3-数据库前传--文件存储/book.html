@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -300,7 +304,8 @@
 * 如果在终端停止并重启后端服务，此前所有计算过的数据彻底烟消云散。</p>
 <p>它就像一台老式的掌上计算器：按一下算一下，算完就忘。</p>
 <p>本讲我们正式拉开<strong>数据持久化存储体系</strong>的大幕。在引入大型关系型数据库之前，我们将从计算机最基础的存储形态——<strong>文件系统（File Storage）</strong>切入，亲手搭建一套基于 JSON 的持久化读写引擎，理解时区与 UTC 黄金法则，并直面高并发下文件存储遭遇的<strong>三大致命天花板（性能雪崩、脏读脏写、全盘损毁）</strong>，彻底理解数据库诞生的必然逻辑。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph StorageLandscape [&quot;计算机四大存储载体形态&quot;]
         direction TB
         RAM[&quot;1. 内存 (RAM)&lt;br/&gt;纳秒级超高速 / 易失性 / 进程停则数据亡&quot;]
@@ -320,7 +325,7 @@
 
     StorageLandscape --&gt; FileStorageLimits
     FileStorageLimits --&gt;|呼唤事务引擎| NextStep[&quot;第 27 讲：SQL 与 SQLite 数据库&quot;]
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1">1. 业务痛点：为什么必须拥有持久化？</h2>
@@ -620,7 +625,8 @@ def history():
 <h2 id="9">9. 方案反思：文件存储的三大致命天花板</h2>
 <p><em>(参考时间: 27:30)</em></p>
 <p>至此，我们的简易文件存储系统运行良好。但在真实的互联网生产环境中，这种“基于单个文件的整存整取”模式隐藏着三个足以摧毁系统的致命隐患：</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph Bottleneck1 [&quot;致命天花板 1：性能雪崩 (I/O 放大)&quot;]
         AppendOne[&quot;新增 1 条数据&quot;] --&gt; LoadAll[&quot;必须在内存读出已有 10,000 条&quot;]
         LoadAll --&gt; DumpAll[&quot;必须将 10,001 条整份重写刷入磁盘&quot;]
@@ -643,7 +649,7 @@ def history():
         PowerCut --&gt; CorruptJSON[&quot;末尾缺失花括号 }]&quot;]
         CorruptJSON --&gt; Panic[&quot;json.load() 语法报错，全部历史记录瞬间归零!&quot;]
     end
-</code></pre>
+</pre>
 
 <h3 id="1io">天花板 1：性能雪崩（I/O 读写放大）</h3>
 <p>观察 <code>save_record</code> 的逻辑：无论新记录多小，都必须将整个文件<strong>全量读入内存、再全量刷回磁盘</strong>。
@@ -698,27 +704,50 @@ def history():
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
