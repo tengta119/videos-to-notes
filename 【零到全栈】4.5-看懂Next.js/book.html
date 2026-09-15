@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -312,7 +316,8 @@
 <p><code>``
 2. **第二步：下载脚本与样式**：浏览器解析 HTML 后，发现其依赖打包生成的 JavaScript（如</code>index-xxx.js<code>）与 CSS 文件，继而发起二次请求。
 3. **第三步：客户端运行时计算与绘制**：JavaScript 下载完毕后在用户的浏览器中执行，由 React 框架动态构建虚拟 DOM 树，再将其真实绘制并填充到</code>#root` 挂载点中。</p>
-<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">
+sequenceDiagram
     autonumber
     actor User as 用户浏览器
     participant Nginx as 服务器 (Nginx)
@@ -325,7 +330,7 @@
     Nginx--&gt;&gt;User: 返回打包静态资源
     User-&gt;&gt;User: 3. 执行 JavaScript，计算 React 组件树
     User-&gt;&gt;DOM: 4. 动态生成 DOM 并挂载展示
-</code></pre>
+</pre>
 
 <div class="video-card screenshot-card">
   <img src="images/shot_00_03_45.png" alt="PPT讲解客户端渲染时序图" loading="lazy">
@@ -348,7 +353,8 @@
 <li><strong>搜索引擎优化（SEO）极不友好</strong>：</li>
 <li>Google、Bing、百度等搜索引擎的爬虫爬取网页时，大多只做一次 HTTP 请求并解析静态 HTML，不会完整等待庞大的 JavaScript 执行渲染。在爬虫眼中，这个页面仅仅是一个没有有效文本的空壳，导致网站难以被有效收录和排名。</li>
 </ol>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     RootCause[&quot;根本病根：页面并非服务器预先存在的真实文件，而是客户端浏览器临时计算出来的&quot;]
 
     RootCause --&gt; Issue1[&quot;深层路径访问 404&lt;br/&gt;(Nginx 磁盘物理查无此文件)&quot;]
@@ -359,7 +365,7 @@
     Issue1 -.-&gt; Sol
     Issue2 -.-&gt; Sol
     Issue3 -.-&gt; Sol
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="nextjs">Next.js 定位与三层工程架构</h2>
@@ -372,7 +378,8 @@
   <p class="video-caption">📷 PPT架构三层结构：工程化/React/Next.js<br><a href="https://www.bilibili.com/video/BV1NxK962E2t?t=608" target="_blank" rel="noopener">在 B 站中打开 (00:10:08)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">graph TD
+<pre class="mermaid">
+graph TD
     subgraph L3[&quot;应用与体验优化层（Next.js）&quot;]
         N1[&quot;文件约定式路由 (App Router)&quot;]
         N2[&quot;服务端预渲染 (RSC / SSG)&quot;]
@@ -393,7 +400,7 @@
 
     L3 --&gt; L2
     L2 --&gt; L1
-</code></pre>
+</pre>
 
 <ul>
 <li><strong>初学者理解 Next.js 的两个核心着力点</strong>：</li>
@@ -458,7 +465,8 @@
 └── package.json
 </code></pre>
 
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     subgraph AppRouter[&quot;app/ 目录结构&quot;]
         RootLayout[&quot;app/layout.jsx (根布局)&quot;]
         RootPage[&quot;app/page.jsx (根页面)&quot;]
@@ -475,7 +483,7 @@
 
     RootPage --&gt;|自动映射| HomeURL
     SubPage --&gt;|自动映射| LabURL
-</code></pre>
+</pre>
 
 <h3 id="2-convention-over-configuration">2. 什么是“约定优于配置（Convention over Configuration）”</h3>
 <ul>
@@ -523,7 +531,8 @@
 </tr>
 </tbody>
 </table>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     Start[&quot;组件设计判断&quot;] --&gt; Q1{&quot;是否需要用户交互、监听事件&lt;br/&gt;(onClick, onChange) 或浏览器动画？&quot;}
     Q1 -- 是 --&gt; Client[&quot;标记 'use client'&lt;br/&gt;(客户端组件 Client Component)&quot;]
     Q1 -- 否 --&gt; Q2{&quot;是否需要使用 useState, useEffect&lt;br/&gt;等响应式客户端 Hook？&quot;}
@@ -532,7 +541,7 @@
 
     Server --&gt; RenderS[&quot;服务端 / 构建期提前静态化生成 HTML&quot;]
     Client --&gt; RenderC[&quot;代码打包并在浏览器端运行时执行交互&quot;]
-</code></pre>
+</pre>
 
 <h3 id="2-rsc">2. 为什么服务端组件（RSC）是杀手锏</h3>
 <ul>
@@ -600,7 +609,8 @@
 <hr />
 <h2 id="_3">本章核心要点总结</h2>
 <p><em>(参考时间: 33:53)</em></p>
-<pre class="highlight"><code class="language-mermaid">mindmap
+<pre class="mermaid">
+mindmap
   root((Next.js 核心价值))
     为什么需要 Next.js
       解决 CSR 404 痛点
@@ -617,7 +627,7 @@
       默认服务端组件 (RSC)
       构建期预渲染真实 HTML (SSG)
       use client 声明客户端交互组件
-</code></pre>
+</pre>
 
 <ol>
 <li><strong>痛点溯源</strong>：传统 SPA 的空壳 HTML 依赖浏览器端执行 JS 绘制，导致深层 URL 404、首屏白屏慢、爬虫无法读取。</li>
@@ -631,27 +641,50 @@
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
