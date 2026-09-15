@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【零到全栈】4.6 - Next.js 项目的两种部署方式：静态导出与常驻服务</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="46-nextjs">【零到全栈】4.6 - Next.js 项目的两种部署方式：静态导出与常驻服务</h1>
+<p>在上一节中，我们成功将 React 单页应用重构升级为 Next.js 生产级框架，并探索了基于文件系统的 App Router 路由与服务端组件（RSC）。然而，在准备将项目推向公网生产服务器时，开发者往往会面临一个核心分水岭：<strong>Next.js 项目到底该如何部署上线？</strong></p>
+<p>上一节结尾留下的一个细节是：<code>next build</code> 生成的 <code>.next/</code> 目录结构十分庞杂，无法像过去 Vite 打包生成的 <code>dist/</code> 一样直接扔给 Nginx。</p>
+<p>本章将系统对比 Next.js 的两种主流上线形态——<strong>常驻 Node.js 动态服务（方案 A）</strong> 与 <strong>纯静态导出（方案 B）</strong>，并带大家在真实 Ubuntu 服务器上实操静态导出（<code>output: 'export'</code>）、配置 Nginx 的 URL 重写规则（<code>try_files $uri.html</code>），最后深入探讨为什么在 AI 全栈开发中，“静态前端 + 独立后端 API”是比“Next.js 单体全栈”更可靠、更经典的架构方案。</p>
+<hr />
+<h2 id="next-nginx">为什么 .next 目录不能直接交给 Nginx</h2>
+<p><em>(参考时间: 01:29)</em></p>
+<p>执行 <code>npm run build</code> 后，观察根目录下生成的 <code>.next/</code> 目录：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_01_29.png" alt="查看 .next 目录结构" loading="lazy">
+  <p class="video-caption">📷 查看 .next 目录结构<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=89" target="_blank" rel="noopener">在 B 站中打开 (00:01:29)</a></p>
+</div>
+
+<p>打开该目录会发现，虽然在 <code>.next/server/app/</code> 下确实存在 <code>index.html</code> 与 <code>text-lab.html</code>，但整个目录结构极其凌乱：
+- 静态 CSS 与客户端 JS 散落于各级哈希子目录中，并非标准 Web 根目录规范。
+- 包含了大量的运行时配置文件、路由清单（manifests）以及专供 Node.js 服务端加载的模块。</p>
+<p>这是因为：<strong>默认的 <code>.next</code> 产物根本不是一个现成的静态网站，而是供 <code>next start</code> 常驻服务消费的“运行时半成品”</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    Build[&quot;执行 next build&quot;] --&gt; Raw[&quot;.next/ 产物目录 (运行时半成品)&quot;]
+    Raw -.-&gt;|无法直接解析| NginxFail[&quot;Nginx 静态文件托管 (404 / 缺少映射)&quot;]
+    Raw --&gt;|正确管道| NodeServer[&quot;常驻服务：next start (Node.js 运行时进程)&quot;]
+</code></pre>
+
+<hr />
+<h2 id="a-vs-b">方案对比：常驻服务 (A) vs 静态导出 (B)</h2>
+<p><em>(参考时间: 04:42)</em></p>
+<p>面对 Next.js 项目上线，工程上有两条明确的分支路线：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_42.png" alt="PPT讲解方案A常驻服务动态渲染动画" loading="lazy">
+  <p class="video-caption">📷 PPT讲解方案A常驻服务动态渲染动画<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=282" target="_blank" rel="noopener">在 B 站中打开 (00:04:42)</a></p>
+</div>
+
+<h3 id="1-a-nodejs-ssr">1. 方案 A：常驻 Node.js 服务（SSR 动态模式）</h3>
+<ul>
+<li><strong>工作方式</strong>：在服务器后台运行 <code>next start</code>（通常由 PM2 或 Docker 守护），7×24 小时常驻一个 Node.js 进程。</li>
+<li><strong>执行流程</strong>：每个用户 HTTP 请求抵达服务器时，由常驻的 Node 进程根据用户身份、Cookie 或动态参数，<strong>在服务端现场即时拼装渲染出定制化的 HTML</strong> 并返回。</li>
+</ul>
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor User as 用户浏览器
+    participant Node as 常驻 Next.js 服务 (Node.js)
+    participant DB as 数据库 / 内部服务
+
+    User-&gt;&gt;Node: 1. 发起请求 GET /profile (携带 Cookie/Token)
+    Node-&gt;&gt;DB: 2. 读取当前用户个性化数据
+    DB--&gt;&gt;Node: 返回私有业务数据
+    Node-&gt;&gt;Node: 3. 服务端现拼专属 HTML (RSC 运行时渲染)
+    Node--&gt;&gt;User: 4. 返回完整且个性化的 HTML
+</code></pre>
+
+<ul>
+<li><strong>核心优势</strong>：极致的灵活性，页面内容完全按请求动态计算，且能保障 SEO。</li>
+<li><strong>代价与短板</strong>：</li>
+<li>必须维护一个常驻 Node 进程，占用 CPU 与内存开销较重。</li>
+<li>需要考虑 Node.js 进程崩溃重启、内存泄漏及容器运维成本。</li>
+</ul>
+<hr />
+<h3 id="2-bstatic-export">2. 方案 B：纯静态导出（Static Export 模式）</h3>
+<ul>
+<li><strong>工作方式</strong>：在 <code>next.config.mjs</code> 中声明 <code>output: 'export'</code>。构建时，Next.js 会把每一个页面提前完整渲染成独立的静态 HTML 文件，连同 CSS/JS 打包入干净的 <code>out/</code> 目录。</li>
+<li><strong>执行流程</strong>：服务器上无需安装 Node.js 运行时或启动常驻进程，直接由高性能的 Nginx 反向代理或静态服务器读取并分发文件。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_03.png" alt="PPT对比方案A与方案B" loading="lazy">
+  <p class="video-caption">📷 PPT对比方案A与方案B<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=423" target="_blank" rel="noopener">在 B 站中打开 (00:07:03)</a></p>
+</div>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">维度对比</th>
+<th style="text-align: left;">方案 A：常驻 Node.js 服务</th>
+<th style="text-align: left;">方案 B：静态导出 (output: 'export')</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>服务器端运行进程</strong></td>
+<td style="text-align: left;">常驻 Node.js 服务 (<code>next start</code>)</td>
+<td style="text-align: left;"><strong>仅需 Nginx</strong>（无需常驻后端服务）</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>页面生成时机</strong></td>
+<td style="text-align: left;">用户每次请求时<strong>即时渲染</strong> (SSR)</td>
+<td style="text-align: left;"><strong>编译构建时提前渲染</strong> (SSG)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>服务器资源占用</strong></td>
+<td style="text-align: left;">较高（消耗内存与算力）</td>
+<td style="text-align: left;"><strong>极低</strong>（纯静态文件 I/O，抗高并发）</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>动态内容处理方式</strong></td>
+<td style="text-align: left;">服务端现场拼装直接输出</td>
+<td style="text-align: left;">前端静态页面秒开 + 浏览器异步调用 API</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>适用场景</strong></td>
+<td style="text-align: left;">电商大促、个性化流媒体、高频变动强 SEO 站点</td>
+<td style="text-align: left;"><strong>企业官网、个人博客、文档站、前后端分离 Web 应用</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-api">3. 动态数据在静态架构下的破局：“静态前端 + 后端 API”</h3>
+<p>许多开发者误以为“选了静态导出就无法做动态业务（如登录、情感分析、打分）”。事实上，绝大多数动态业务场景均采用 <strong>“静态前端骨架秒开 + 客户端向后端 API 异步索取数据”</strong> 的经典模式：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_04.png" alt="PPT讲解静态前端+后端API交互动画" loading="lazy">
+  <p class="video-caption">📷 PPT讲解静态前端+后端API交互动画<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=544" target="_blank" rel="noopener">在 B 站中打开 (00:09:04)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor User as 用户浏览器
+    participant Nginx as Web 服务器 (Nginx)
+    participant API as 独立后端服务 (Python / FastAPI)
+
+    User-&gt;&gt;Nginx: 1. 请求前端页面 GET /text-lab
+    Nginx--&gt;&gt;User: 返回预渲染好的静态 HTML + 静态资源 (毫秒级响应)
+    Note over User: 2. 浏览器完成首屏渲染，显示输入框与交互界面
+    User-&gt;&gt;API: 3. 用户输入文本并点击分析，发起异步 POST /api/analyze
+    API--&gt;&gt;User: 4. 返回计算结果 JSON {&quot;sentiment&quot;: 0.95, &quot;pinyin&quot;: &quot;...&quot;}
+    Note over User: 5. 客户端局部重绘，更新展示卡片
+</code></pre>
+
+<p>对于本课程的 <code>zero-to-tech</code> 项目，选用 <strong>方案 B（静态导出）</strong> 是最优解：架构极轻、极致稳定，且与下一阶段引入的 Python 后端 API 完美契合。</p>
+<hr />
+<h2 id="_1">静态导出配置与构建验证</h2>
+<p><em>(参考时间: 11:39)</em></p>
+<h3 id="1-nextconfigmjs">1. 修改 next.config.mjs</h3>
+<p>在项目根目录下打开配置文件 <code>next.config.mjs</code>，添加 <code>output: 'export'</code> 声明：</p>
+<pre class="highlight"><code class="language-javascript">/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'export', // 声明静态导出模式
+};
+
+export default nextConfig;
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_39.png" alt="next.config.mjs 添加 output export" loading="lazy">
+  <p class="video-caption">📷 next.config.mjs 添加 output export<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=699" target="_blank" rel="noopener">在 B 站中打开 (00:11:39)</a></p>
+</div>
+
+<p>该配置明确告知 Next.js：放弃构建专供 <code>next start</code> 消费的半成品，在编译期将全站页面预渲染为纯静态文件，并统一收纳到 <code>out/</code> 文件夹中。</p>
+<h3 id="2">2. 本地构建与产物审查</h3>
+<p>执行构建命令：</p>
+<pre class="highlight"><code class="language-bash">npm run build
+</code></pre>
+
+<p>构建完成后，根目录下生成了一个纯净的 <code>out/</code> 目录：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_22.png" alt="构建生成 out 目录结构" loading="lazy">
+  <p class="video-caption">📷 构建生成 out 目录结构<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=742" target="_blank" rel="noopener">在 B 站中打开 (00:12:22)</a></p>
+</div>
+
+<pre class="highlight"><code>out/
+├── _next/
+│   └── static/           # 打包压缩后的 CSS 与 JS 静态资源
+├── index.html            # 首页静态 HTML
+├── text-lab.html         # /text-lab 静态 HTML
+├── 404.html              # 静态 404 兜底页
+└── favicon.ico
+</code></pre>
+
+<blockquote>
+<p>[!TIP]
+<code>out/</code> 目录属于本地构建产物，已在 <code>.gitignore</code> 中被忽略，切勿将其提交入 Git 仓库。生产部署时，应在云服务器端拉取源码后现场执行 <code>npm run build</code> 生成 <code>out/</code>。</p>
+</blockquote>
+<hr />
+<h2 id="nginx">服务器部署与 Nginx 规则重写</h2>
+<p><em>(参考时间: 14:07)</em></p>
+<h3 id="1">1. 提交配置并推送到云端</h3>
+<p>在本地完成 Git 提交并推送至 GitHub：</p>
+<pre class="highlight"><code class="language-bash">git add next.config.mjs
+git commit -m &quot;支持静态构建&quot;
+git push origin main
+</code></pre>
+
+<p>SSH 登录远程 Ubuntu 云主机，进入项目目录执行更新与构建：</p>
+<pre class="highlight"><code class="language-bash">cd /home/ubuntu/zero-to-tech
+git pull origin main
+npm install
+npm run build
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_07.png" alt="服务器上拉取并构建 out" loading="lazy">
+  <p class="video-caption">📷 服务器上拉取并构建 out<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=847" target="_blank" rel="noopener">在 B 站中打开 (00:14:07)</a></p>
+</div>
+
+<p>确认服务器磁盘上已成功生成 <code>/var/www/zero-to-tech/out</code> 静态产物目录。</p>
+<hr />
+<h3 id="2-nginx-clean-urlsurihtml">2. 配置 Nginx：优雅支持 Clean URLs（$uri.html）</h3>
+<p>在旧版配置中，Nginx 指向的是 Vite 生成的 <code>dist/</code>，且未能识别无扩展名的路由。我们编辑 Nginx 站点配置：</p>
+<pre class="highlight"><code class="language-bash">sudo vim /etc/nginx/sites-available/default
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_15_09.png" alt="编辑 nginx 配置文件 default" loading="lazy">
+  <p class="video-caption">📷 编辑 nginx 配置文件 default<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=909" target="_blank" rel="noopener">在 B 站中打开 (00:15:09)</a></p>
+</div>
+
+<p>核心修改如下：</p>
+<pre class="highlight"><code class="language-nginx">server {
+    listen 80;
+    server_name _;
+
+    # 1. 将根目录重定向至 Next.js 静态导出的 out 目录
+    root /home/ubuntu/zero-to-tech/out;
+    index index.html;
+
+    location / {
+        # 2. 核心路由回退匹配规则
+        try_files $uri $uri.html $uri/ /index.html;
+    }
+}
+</code></pre>
+
+<h4 id="urihtml">关键技术点拆解：<code>$uri.html</code> 的作用</h4>
+<ul>
+<li>当用户在浏览器输入 <code>http://your-server-ip/text-lab</code> 时，$uri 的值即为 <code>/text-lab</code>。</li>
+<li>磁盘上的 <code>out/</code> 目录下并没有名为 <code>text-lab</code> 的无后缀文件或文件夹，只有 <code>text-lab.html</code>。</li>
+<li>如果规则仅写 <code>try_files $uri $uri/</code>，Nginx 就会判定文件不存在而触发 404。</li>
+<li>增加 <code>$uri.html</code> 匹配项后，Nginx 会自动在磁盘寻找 <code>text-lab.html</code>，成功读取并返回给用户，同时地址栏仍保持优雅的无后缀展示（Clean URL）。</li>
+</ul>
+<h3 id="3">3. 配置检验与平滑重载</h3>
+<p>保存配置后，执行语法测试并重载服务：</p>
+<pre class="highlight"><code class="language-bash">sudo nginx -t
+sudo systemctl reload nginx
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_16_39.png" alt="nginx -t 与 reload 重载服务" loading="lazy">
+  <p class="video-caption">📷 nginx -t 与 reload 重载服务<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=999" target="_blank" rel="noopener">在 B 站中打开 (00:16:39)</a></p>
+</div>
+
+<h3 id="4">4. 浏览器验证与抓包检验</h3>
+<p>在浏览器中直接输入 <code>http://your-server-ip/text-lab</code> 刷新访问：
+1. <strong>页面正常呈现</strong>：404 彻底消除，直达目标页面。
+2. <strong>首屏内容即时可见</strong>：打开开发者工具 Network 面板，查看第一个 <code>text-lab</code> HTML 请求的响应体，完整且结构化的 HTML 内容已包含在内，无需等待 JavaScript 客户端二次运算。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_28.png" alt="浏览器首包直接拿到完整 HTML 验证" loading="lazy">
+  <p class="video-caption">📷 浏览器首包直接拿到完整 HTML 验证<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=1048" target="_blank" rel="noopener">在 B 站中打开 (00:17:28)</a></p>
+</div>
+
+<hr />
+<h2 id="nextjs">架构深思：为什么不做“Next.js 单体全栈”</h2>
+<p><em>(参考时间: 21:54)</em></p>
+<p>随着 Next.js 的演进，社区开始大量推崇“Next.js 单体全栈”——即在同一个 Next 项目中，利用 Route Handlers 和 Server Actions 直接连接数据库与编写业务逻辑。</p>
+<p>然而在工业界与本课程体系中，我们坚决选择 <strong>“静态前端 + 独立后端 API”</strong> 的解耦路线：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_21_54.png" alt="PPT展示静态前端+独立后端架构模式" loading="lazy">
+  <p class="video-caption">📷 PPT展示静态前端+独立后端架构模式<br><a href="https://www.bilibili.com/video/BV1FiTq6fE8N?t=1314" target="_blank" rel="noopener">在 B 站中打开 (00:21:54)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">graph LR
+    subgraph Client[&quot;用户端&quot;]
+        Browser[&quot;浏览器 (静态页面 + 客户端 JS)&quot;]
+    end
+
+    subgraph StaticFront[&quot;前端静态托管 (Nginx)&quot;]
+        N1[&quot;out/index.html&quot;]
+        N2[&quot;out/text-lab.html&quot;]
+        N3[&quot;out/_next/static/&quot;]
+    end
+
+    subgraph BackEnd[&quot;独立后端 API (Python / FastAPI)&quot;]
+        API1[&quot;POST /api/analyze (NLP计算)&quot;]
+        API2[&quot;POST /api/pinyin (分词与注音)&quot;]
+        DB[(数据持久化 / SQLite)]
+    end
+
+    Browser --&gt;|1. 加载静态文件| StaticFront
+    Browser -.-&gt;|2. 异步请求数据| API1
+    Browser -.-&gt;|2. 异步请求数据| API2
+    API1 --&gt; DB
+    API2 --&gt; DB
+</code></pre>
+
+<h3 id="_2">坚持前后端分离的三大考量：</h3>
+<ol>
+<li><strong>工程思维与心智模型的解耦</strong>：</li>
+<li>将前后端杂糅在单体代码库中，极易模糊“客户端”与“服务端”的边界。对于全栈学习者而言，清晰划分两者的角色定位（前端负责交互表现与体验，后端负责业务校验与核心算力）是建立工程化素养的基石。</li>
+<li><strong>算法与数据生态的匹配（Python 优势）</strong>：</li>
+<li>现代 AI 应用核心在于文本分析、向量计算、模型调用与自然语言处理。Python 拥有成熟稳固的生态圈（FastAPI、jieba、PyTorch、Pandas），在计算与数据服务层面的效能与开发体验远超 Node.js。</li>
+<li><strong>架构安全性与稳定性防御</strong>：</li>
+<li>复杂的服务端动态拼装（RSC 动态运行机制）存在较大的攻击面。例如 Next.js 历史上曾爆发过无需认证的严重远程代码执行漏洞（RCE，攻击者仅凭特制 HTTP 请求即可控制服务器并植入勒索脚本）。</li>
+<li>相比之下，静态前端文件托管在 Nginx 之后，天然不存在服务端动态执行攻击面；后端 API 独立设防、按需扩容，系统的稳健性与容灾能力呈数量级提升。</li>
+</ol>
+<hr />
+<h2 id="_3">模块四（现代前端）全景回顾</h2>
+<p><em>(参考时间: 25:02)</em></p>
+<p>至此，课程的 <strong>【模块四：现代前端】</strong> 圆满落幕。我们经历了前端工业化完整的技术螺旋：</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    Vanilla[&quot;原生前端 (Vanilla)&lt;br/&gt;干净但缺乏工程管理与组件复用&quot;]
+    ViteReact[&quot;模块化构建与 React&lt;br/&gt;组件开发便利，但引入 CSR 白屏与 SEO 弊端&quot;]
+    NextPre[&quot;Next.js 架构升级&lt;br/&gt;服务端预渲染 (RSC) 解决 404 与 SEO 痛点&quot;]
+    StaticOut[&quot;静态导出 (Nginx 托管)&lt;br/&gt;技术螺旋上升：重回纯粹 HTML，兼顾生态与稳健&quot;]
+
+    Vanilla --&gt;|引入工程化| ViteReact
+    ViteReact --&gt;|解决痛点| NextPre
+    NextPre --&gt;|工业落地| StaticOut
+</code></pre>
+
+<ul>
+<li><strong>技术没有最优，只有最合适</strong>：</li>
+<li>构建复杂企业级应用、需要依托庞大生态时，成熟框架是第一选择；</li>
+<li>制作一次性展示看板、课件演示文稿时，原生 HTML 轻便优雅、零环境依赖。</li>
+</ul>
+<p>在接下来的 <strong>【模块五：后端开发】</strong> 中，我们将正式开启服务端之旅——从手搓一个最原始的 HTTP 服务开始，深入探究 API 的本质、掌握 Python 与 FastAPI 开发，打通前后端联调的完整闭环！</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
