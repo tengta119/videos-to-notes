@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -294,7 +298,8 @@
 <p>在上一节中，我们仅仅依靠 Python 内置的 <code>http.server</code> 模块，“纯手工”搓出了一个基础的 HTTP API。虽然代码量不算多，但为了把一段简简单单的个人资料 JSON 数据发送出去，我们耗费了大量精力去处理 HTTP 协议底层的各种琐碎细节：逐行比对路径、手工写入状态码与响应头、精准输出 <code>\r\n</code> 空行、做二进制流编码与 404 兜底。</p>
 <p>更关键的是，上一讲我们仅仅实现了一个最基础的 <code>GET</code> 接口。如果面对带有复杂参数、需要校验合法性的 <code>POST</code> 接口，手搓代码的繁重程度将呈指数级上升。</p>
 <p>从本节开始，我们将告别手搓杂活，正式引入现代 Python 生态中最流行的高性能后端框架——<strong>FastAPI</strong>。我们将用极度优雅的几行代码重构上一节的接口，并进一步实现带有数据校验闸门的 <code>POST</code> 分析接口，直观体会框架带来的巨大生产力跃升。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph HandMadeHell [&quot;上一节：手搓原生的繁杂杂活&quot;]
         HM1[&quot;手动比对 if self.path == ...&quot;]
         HM2[&quot;手动 send_response(200)&quot;]
@@ -319,7 +324,7 @@
     end
 
     HandMadeHell -.-&gt;|框架封装演进| FastAPIElegance
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1">1. 为什么需要框架？从协议杂活到专注业务</h2>
@@ -344,7 +349,8 @@
   <p class="video-caption">📷 Python 常见三大后端框架定位对比<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=150" target="_blank" rel="noopener">在 B 站中打开 (00:02:30)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">mindmap
+<pre class="mermaid">
+mindmap
   root((Python 后端三大框架))
     Flask
       老牌微框架 (Micro-framework)
@@ -360,7 +366,7 @@
       内置 Pydantic 自动数据校验
       自动生成交互式 OpenAPI / Swagger 文档
       性能媲美 NodeJS 与 Go
-</code></pre>
+</pre>
 
 <h3 id="fastapi">为什么本课程选择 FastAPI？</h3>
 <ol>
@@ -377,7 +383,8 @@
   <p class="video-caption">📷 FastAPI 与 Uvicorn 职责分工图解<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=370" target="_blank" rel="noopener">在 B 站中打开 (00:06:10)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">
+sequenceDiagram
     autonumber
     actor Client as 外部客户端 (浏览器 / curl)
     participant Uvicorn as Uvicorn (ASGI 网络服务器)
@@ -393,7 +400,7 @@
     Note over FastAPI: 自动完成 JSON 序列化、写入 Content-Type
     FastAPI--&gt;&gt;Uvicorn: 6. 返回 HTTP 响应报文事件
     Uvicorn--&gt;&gt;Client: 7. 将二进制流推回客户端网络连接
-</code></pre>
+</pre>
 
 <ul>
 <li><strong>FastAPI（应用大脑）</strong>：决定接口做什么（路由、校验、组装数据）；</li>
@@ -569,7 +576,8 @@ def analyze(req: AnalyzeRequest):
 </div>
 
 <h3 id="pydantic">Pydantic 数据校验闸门机制</h3>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     ClientReq[&quot;客户端 POST /api/analyze&lt;br/&gt;发送 JSON 载荷&quot;] --&gt; Gateway{&quot;FastAPI + Pydantic&lt;br/&gt;数据校验闸门&quot;}
 
     Gateway -- &quot;符合规范 (含合法 text 字段)&quot; --&gt; SuccessBranch[&quot;通过拦截&lt;br/&gt;进入 analyze 业务函数&quot;]
@@ -577,7 +585,7 @@ def analyze(req: AnalyzeRequest):
 
     Gateway -- &quot;不符合规范 (缺少 text 或类型错误)&quot; --&gt; RejectBranch[&quot;直接就地拦截&lt;br/&gt;阻断进入业务层!&quot;]
     RejectBranch --&gt; Return422[&quot;自动返回 422 Unprocessable Entity&lt;br/&gt;+ 精确指明出错字段与原因&quot;]
-</code></pre>
+</pre>
 
 <div class="video-card screenshot-card">
   <img src="images/shot_00_25_50.png" alt="Pydantic 校验闸门示意图：合法通过 vs 非法就地拦截" loading="lazy">
@@ -697,27 +705,50 @@ git commit -m &quot;feat: 使用 FastAPI 重构后端并实现参数校验与自
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
