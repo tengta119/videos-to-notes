@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -297,7 +301,8 @@
 2. <strong>分析记录阅后即焚</strong>：用户在前端提交的每一次文本分析，在页面刷新后便荡然无存，整个后端没有任何持久化存储与“记忆”能力。</p>
 <p>从本讲开始，我们将正式步入<strong>模块六：数据处理与持久化体系</strong>。在模块六的前两讲中，我们将重点兑现第一笔欠账——<strong>引入 Python 强大的自然语言处理（NLP）生态，用真正的算法算出真实的拼音与情感分值</strong>。</p>
 <p>本节我们将深入探讨现代软件工程的核心思想：<strong>拒绝重新发明轮子（Don't Reinvent the Wheel）</strong>，认识 Python 官方包仓库 <strong>PyPI</strong>，掌握“找库、验库、玩库（REPL）、入库”的标准化工程方法论，并固化项目依赖。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph Requirements [&quot;真实业务需求 (文字实验室)&quot;]
         ReqPinyin[&quot;中文汉字转拼音&lt;br/&gt;(需覆盖几万汉字 + 多音字精准切分)&quot;]
         ReqSentiment[&quot;中文情感倾向打分&lt;br/&gt;(需 NLP 语义理解 + 机器学习打分模型)&quot;]
@@ -322,7 +327,7 @@
 
     Requirements --&gt; Decision
     PyPI --&gt; Pipeline
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1">1. 业务痛点与“不造轮子”哲学</h2>
@@ -404,13 +409,14 @@
 <h2 id="4">4. 严谨验库双重关卡：数据佐证与文档核验</h2>
 <p><em>(参考时间: 06:30)</em></p>
 <p>如何验证一个第三方库是否靠谱、能不能满足项目需求？我们必须建立<strong>双重核验关卡</strong>：</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     Candidate[&quot;AI 推荐的候选库名单&quot;] --&gt; Gate1{&quot;第一道门：数据佐证&lt;br/&gt;(靠不靠谱? 是否维护?)&quot;}
     Gate1 --&gt;|Stars &gt; 1k / 近期有维护| Gate2{&quot;第二道门：文档核验&lt;br/&gt;(能力是否契合业务?)&quot;}
     Gate1 --&gt;|0 Star / 废弃无描述| Reject1[&quot;淘汰：存在安全隐患与不可用风险&quot;]
     Gate2 --&gt;|API 满足声调/打分规范| Adopt[&quot;采纳：进入安装与 REPL 测试&quot;]
     Gate2 --&gt;|功能不匹配或黑盒不透明| Reject2[&quot;淘汰：另寻替代方案&quot;]
-</code></pre>
+</pre>
 
 <h3 id="github-stars">第一道门：数据佐证（GitHub Stars 与维护状态）</h3>
 <p>在 PyPI 搜索 <code>pypinyin</code>：</p>
@@ -610,11 +616,12 @@ pip install snownlp
 <h2 id="8">8. 方法论升华：第三方库集成四部曲</h2>
 <p><em>(参考时间: 18:45)</em></p>
 <p>回顾刚才从无到有的整个过程，我们走过了一套不仅适用于 Python、更适用于所有现代软件工程的<strong>标准化第三方库集成流水线</strong>：</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     Find[&quot;1. 找库&lt;br/&gt;AI 提示词探索候选&quot;] --&gt; Verify[&quot;2. 验库&lt;br/&gt;GitHub Stars + 文档对照&quot;]
     Verify --&gt; Play[&quot;3. 玩库&lt;br/&gt;REPL 快速试错求证&quot;]
     Play --&gt; Commit[&quot;4. 入库&lt;br/&gt;业务代码集成 + 依赖锁定&quot;]
-</code></pre>
+</pre>
 
 <ol>
 <li><strong>找库（Find）</strong>：清晰提炼自身业务输入与输出，借助 AI 快速检索生态中已有的候选方案；</li>
@@ -696,27 +703,50 @@ git commit -m &quot;添加 pypinyin 和 snownlp 到 requirements.txt&quot;
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
