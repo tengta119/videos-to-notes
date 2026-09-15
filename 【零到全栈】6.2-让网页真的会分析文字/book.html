@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 25 讲：让网页真的会分析文字（6.2）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="25-62">第 25 讲：让网页真的会分析文字（6.2）</h1>
+<p>在上一讲中，我们树立了“拒绝重复造轮子”的工程思维，认识了 Python 官方包仓库 PyPI，并通过 AI 辅助选型与 GitHub 数据把关，锁定了两款优秀的第三方自然语言处理（NLP）库：<strong><code>pypinyin</code></strong>（汉字拼音与多音字处理）与 <strong><code>snownlp</code></strong>（轻量级中文情感分析）。我们还在终端 REPL 中充分验证了它们的 API 表现，并将它们固化到了 <code>requirements.txt</code> 中。</p>
+<p>本讲我们将正式兑现项目中的第一笔业务欠账——<strong>将这两个库完整接入 FastAPI 的核心路由 <code>POST /api/analyze</code>，让运行在浏览器里的文字实验室真正拥有智能分析与多音字标注的能力</strong>！</p>
+<p>在此过程中，我们将深刻体会现代分布式系统与微服务架构的基石思想：<strong>API 契约守恒定律（The Law of API Contract Invariance）</strong>，并在生产实测中客观探寻传统小模型与现代大语言模型的认知边界。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph BrowserClient [&quot;前端客户端 (Next.js)&quot;]
+        direction TB
+        InputBox[&quot;用户在文字实验室输入：&lt;br/&gt;'重庆重量级选手步行去银行'&quot;]
+        SubmitBtn[&quot;点击'开始分析'按钮&quot;]
+        FetchCall[&quot;fetch POST /api/analyze&lt;br/&gt;Payload: { text: '...' }&quot;]
+        InputBox --&gt; SubmitBtn --&gt; FetchCall
+    end
+
+    subgraph APIContract [&quot;不变的 API 契约 (Interface Boundary)&quot;]
+        direction TB
+        Endpoint[&quot;POST /api/analyze&quot;]
+        ReqSchema[&quot;Request: { text: str }&quot;]
+        RespSchema[&quot;Response: { text, score, label, pinyin }&quot;]
+    end
+
+    subgraph FastAPIBackend [&quot;后端微服务 (FastAPI 业务逻辑)&quot;]
+        direction TB
+        NLP1[&quot;pypinyin: lazy_pinyin(text, style=Style.TONE)&lt;br/&gt;-&gt; 输出带声调的单层扁平列表&quot;]
+        NLP2[&quot;snownlp: SnowNLP(text).sentiments&lt;br/&gt;-&gt; 输出 0.0 ~ 1.0 连续浮点分值&quot;]
+        LabelLogic[&quot;score_to_label(score) 业务阈值映射&lt;br/&gt;&gt;= 0.6 偏积极 | &lt;= 0.4 偏消极 | 其余中性&quot;]
+        Combine[&quot;组装为标准 JSON 并返回客户端&quot;]
+
+        NLP1 --&gt; Combine
+        NLP2 --&gt; LabelLogic --&gt; Combine
+    end
+
+    subgraph BrowserRender [&quot;前端结果呈现&quot;]
+        direction TB
+        ShowPinyin[&quot;渲染各汉字拼音卡片与声调&quot;]
+        ShowScore[&quot;渲染情感百分比分数&quot;]
+        ShowBadge[&quot;渲染情绪分类 Badge (如偏积极)&quot;]
+    end
+
+    FetchCall --&gt; Endpoint
+    Endpoint --&gt; NLP1 &amp; NLP2
+    Combine --&gt; BrowserRender
+</code></pre>
+
+<hr />
+<h2 id="1">1. 现状审视与接口契约守恒</h2>
+<p><em>(参考时间: 00:00)</em></p>
+<p>打开后端项目的入口文件 <code>zero-to-tech/backend/main.py</code>，查看上一模块留下的 <code>analyze</code> 路由：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_00_45.png" alt="main.py 中此前写死的假数据分析接口代码" loading="lazy">
+  <p class="video-caption">📷 main.py 中此前写死的假数据分析接口代码<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=45" target="_blank" rel="noopener">在 B 站中打开 (00:00:45)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-python"># 改造前的占位实现
+@app.post(&quot;/api/analyze&quot;)
+def analyze(req: AnalyzeRequest):
+    return {
+        &quot;text&quot;: req.text,                 # 唯一真实的数据：原样回传用户输入的文本
+        &quot;score&quot;: 0.5,                     # 假数据：写死 0.5 分
+        &quot;label&quot;: &quot;偏平静&quot;,                 # 假数据：写死静态标签
+        &quot;pinyin&quot;: &quot;（模块 6 再说）&quot;,        # 假数据：写死提示字符串
+    }
+</code></pre>
+
+<h3 id="_1">严格的改造准则：只变实现，不改契约</h3>
+<p>在重构这个接口时，我们必须遵守严格的软件工程规范：
+* <strong>接口路径不变</strong>：依然是 <code>/api/analyze</code>；
+* <strong>HTTP 方法不变</strong>：依然是 <code>POST</code>；
+* <strong>请求体模型不变</strong>：依然是通过 <code>AnalyzeRequest(BaseModel)</code> 接收包含 <code>text</code> 的 JSON；
+* <strong>响应 JSON 键名不变</strong>：依然严密对应 <code>text</code>、<code>score</code>、<code>label</code>、<code>pinyin</code> 四个键。</p>
+<p>只要守住这个<strong>契约（Contract）</strong>，前端代码就完全无需任何修改，实现真正的平滑升级。</p>
+<hr />
+<h2 id="2">2. 后端重构：接入第三方库与算法计算</h2>
+<p><em>(参考时间: 01:40)</em></p>
+<p>从课程讲义中获取标准的改造逻辑与函数导入：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_01_55.png" alt="课程讲义中引入第三方库与情感打分参考代码" loading="lazy">
+  <p class="video-caption">📷 课程讲义中引入第三方库与情感打分参考代码<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=115" target="_blank" rel="noopener">在 B 站中打开 (00:01:55)</a></p>
+</div>
+
+<h3 id="1-mainpy">步骤 1：在 <code>main.py</code> 顶部导入核心类与方法</h3>
+<pre class="highlight"><code class="language-python">from pypinyin import lazy_pinyin, Style
+from snownlp import SnowNLP
+</code></pre>
+
+<ul>
+<li><strong><code>lazy_pinyin</code></strong>：能够直接输出单层扁平列表，避免默认 <code>pinyin()</code> 带来的双重嵌套中括号；</li>
+<li><strong><code>Style</code></strong>：配合 <code>Style.TONE</code> 参数，确保输出的拼音携带准确的声调符号；</li>
+<li><strong><code>SnowNLP</code></strong>：情感分析核心处理类。</li>
+</ul>
+<h3 id="2-snownlp">步骤 2：用 <code>SnowNLP</code> 计算情感打分</h3>
+<p>在 <code>analyze</code> 函数体内部，利用 <code>req.text</code> 实例化模型，提取 <code>sentiments</code> 属性，并使用内置的 <code>round()</code> 函数保留两位小数：</p>
+<pre class="highlight"><code class="language-python">s = SnowNLP(req.text)
+score = round(s.sentiments, 2)
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_03_10.png" alt="在 main.py 中接入 SnowNLP 计算保留两位小数的浮点分值" loading="lazy">
+  <p class="video-caption">📷 在 main.py 中接入 SnowNLP 计算保留两位小数的浮点分值<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=190" target="_blank" rel="noopener">在 B 站中打开 (00:03:10)</a></p>
+</div>
+
+<h3 id="3-lazy_pinyin">步骤 3：用 <code>lazy_pinyin</code> 转换拼音</h3>
+<p>直接调用 <code>lazy_pinyin</code>，将原文字串转换为携带音调的列表：</p>
+<pre class="highlight"><code class="language-python">pinyin_list = lazy_pinyin(req.text, style=Style.TONE)
+</code></pre>
+
+<hr />
+<h2 id="3-score_to_label">3. 业务逻辑补充：编写 <code>score_to_label</code> 映射函数</h2>
+<p><em>(参考时间: 04:30)</em></p>
+<p>为什么我们需要额外编写一段逻辑？
+* <code>pypinyin</code> 和 <code>snownlp</code> 提供了优秀的通用算法底层，但它们输出的是连续的浮点概率（如 <code>0.9678...</code>）；
+* 我们的前端界面需要向最终用户直观展示“偏积极”、“偏消极”或“中性”的情绪状态标签。
+算法库无法代替我们做这种特定的业务判定，<strong>将连续的算法分值转化为离散的业务标签，属于典型的后端业务逻辑</strong>。</p>
+<p>我们在 <code>analyze</code> 函数上方定义纯函数 <code>score_label</code>：</p>
+<pre class="highlight"><code class="language-python">def score_label(score):
+    if score &gt;= 0.6:
+        return &quot;偏积极&quot;
+    elif score &lt;= 0.4:
+        return &quot;偏消极&quot;
+    else:
+        return &quot;中性&quot;
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_04_10.png" alt="定义 score_label 阈值映射纯函数" loading="lazy">
+  <p class="video-caption">📷 定义 score_label 阈值映射纯函数<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=250" target="_blank" rel="noopener">在 B 站中打开 (00:04:10)</a></p>
+</div>
+
+<blockquote>
+<p>[!NOTE]
+这里的 <code>0.6</code> 与 <code>0.4</code> 是业务阈值线。如果后续团队希望更严格，也可以自由调成 <code>0.7</code> 和 <code>0.3</code>。这种逻辑独立抽离成函数，极大地提高了代码的可维护性与可测性。</p>
+</blockquote>
+<h3 id="_2">改造后的完整接口代码</h3>
+<p>将上述逻辑装配至路由中：</p>
+<pre class="highlight"><code class="language-python">@app.post(&quot;/api/analyze&quot;)
+def analyze(req: AnalyzeRequest):
+    text = req.text
+    score = round(SnowNLP(text).sentiments, 2)
+    return {
+        &quot;text&quot;: req.text,
+        &quot;score&quot;: score,
+        &quot;label&quot;: score_label(score),
+        &quot;pinyin&quot;: lazy_pinyin(text, style=Style.TONE),
+    }
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_05_30.png" alt="完成改造后的 analyze 完整接口实现" loading="lazy">
+  <p class="video-caption">📷 完成改造后的 analyze 完整接口实现<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=330" target="_blank" rel="noopener">在 B 站中打开 (00:05:30)</a></p>
+</div>
+
+<p>整个改动仅十几行代码，却让接口脱胎换骨，具备了真正的 NLP 计算能力。</p>
+<hr />
+<h2 id="4">4. 全栈联动实测：文字实验室成真</h2>
+<p><em>(参考时间: 05:50)</em></p>
+<p>保存后端代码，由于 <code>fastapi dev</code> 开启了自动热重载，后端立即完成了更新。
+同时确保前端 Next.js 服务正常运行：</p>
+<pre class="highlight"><code class="language-bash"># 终端 1 (前端)
+npm run dev
+
+# 终端 2 (后端)
+fastapi dev
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_15.png" alt="双终端并行常驻前端与后端服务" loading="lazy">
+  <p class="video-caption">📷 双终端并行常驻前端与后端服务<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=375" target="_blank" rel="noopener">在 B 站中打开 (00:06:15)</a></p>
+</div>
+
+<p>在浏览器中打开前端页面 <code>http://localhost:3000/text-lab</code>，在“文字实验室”界面进行全面实测。</p>
+<h3 id="1_1">测试用例 1：多音字综合辨析</h3>
+<p>在输入框键入包含多重多音字的复杂语句：</p>
+<blockquote>
+<p><strong>“重庆重量级选手，步行去银行”</strong></p>
+</blockquote>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_05.png" alt="文字实验室输入多音字测试语句" loading="lazy">
+  <p class="video-caption">📷 文字实验室输入多音字测试语句<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=425" target="_blank" rel="noopener">在 B 站中打开 (00:07:05)</a></p>
+</div>
+
+<p>点击“开始分析”：
+* <strong>拼音精准度</strong>：“重庆”输出 <code>chóng qìng</code>，“重量级”输出 <code>zhòng liàng jí</code>，“步行”输出 <code>bù xíng</code>，“银行”输出 <code>yín háng</code>！多音字全部结合语境识别正确，声调分毫不差；
+* <strong>情感分数与标签</strong>：得分 <code>0.5</code>，标签准确归类为 <strong>中性</strong>。</p>
+<h3 id="2_1">测试用例 2：正面赞扬与负面批评</h3>
+<ul>
+<li>输入：“<strong>我特别喜欢这部电影</strong>” -&gt; 接口返回 <code>score: 0.98</code>，标签准确显示 <strong>偏积极</strong>；</li>
+<li>输入：“<strong>太失望了再也不来了</strong>” -&gt; 接口返回 <code>score: 0.01</code>，标签准确显示 <strong>偏消极</strong>。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_07_25.png" alt="测试多音字结果与连续输入情感句子验证" loading="lazy">
+  <p class="video-caption">📷 测试多音字结果与连续输入情感句子验证<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=445" target="_blank" rel="noopener">在 B 站中打开 (00:07:25)</a></p>
+</div>
+
+<p>全链路联调大获全胜！我们在 VS Code 或 GitHub Desktop 中提交本次改动：</p>
+<pre class="highlight"><code class="language-bash">git add backend/main.py
+git commit -m &quot;完成 analyze 接口的实现&quot;
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_08_00.png" alt="提交后端接口代码变更至 Git 仓库" loading="lazy">
+  <p class="video-caption">📷 提交后端接口代码变更至 Git 仓库<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=480" target="_blank" rel="noopener">在 B 站中打开 (00:08:00)</a></p>
+</div>
+
+<hr />
+<h2 id="5-api">5. 架构深思：API 契约守恒定律</h2>
+<p><em>(参考时间: 07:50)</em></p>
+<p>在刚才的整个改造过程中，细心的读者一定会注意到一个惊人的事实：
+<strong>从头到尾，我们没有改动前端 Next.js 的任何一行代码！</strong></p>
+<p>为什么前端无需改动？
+因为<strong>服务端的实现细节对调用方是完全透明的</strong>。</p>
+<pre class="highlight"><code class="language-mermaid">classDiagram
+    class APIContract {
+        &lt;&lt;Interface&gt;&gt;
+        +POST /api/analyze
+        +Header: Content-Type: application/json
+        +Request: {&quot;text&quot;: string}
+        +Response: {&quot;text&quot;: string, &quot;score&quot;: float, &quot;label&quot;: string, &quot;pinyin&quot;: string[]}
+    }
+
+    class MockImplementation {
+        -写死 0.5 和假占位符
+    }
+
+    class LocalNLPImplementation {
+        -pypinyin
+        -snownlp
+    }
+
+    class LLMCloudImplementation {
+        -DeepSeek API
+        -OpenAI API
+    }
+
+    APIContract &lt;|.. MockImplementation : 模块五初版
+    APIContract &lt;|.. LocalNLPImplementation : 模块六当前版
+    APIContract &lt;|.. LLMCloudImplementation : 未来扩展版
+</code></pre>
+
+<p>我们打开浏览器访问 FastAPI 自带的 Swagger 自动文档（<code>http://localhost:8000/docs</code>）：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_09_25.png" alt="FastAPI Swagger API 文档结构未发生任何改变" loading="lazy">
+  <p class="video-caption">📷 FastAPI Swagger API 文档结构未发生任何改变<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=565" target="_blank" rel="noopener">在 B 站中打开 (00:09:25)</a></p>
+</div>
+
+<p>可以看到，文档中声明的路径、参数模型和响应模式，与上一节课一模一样。</p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>API 契约守恒定律</strong>：
+只要服务端严格遵守约定的 API 契约（URL、HTTP Method、Payload Schema、Response Schema），<strong>服务端内部的代码无论怎么重构、换 Python 库、甚至用 Java / Go 完全推倒重写，只要接口契约不变，前端调用方都完全无感知，业务平滑无阻断</strong>。
+这正是现代前后端分离与微服务架构能够支撑万人协同大兵团作战的核心秘密！</p>
+</blockquote>
+<hr />
+<h2 id="6-nlp">6. 模型探索：探寻传统 NLP 算法的边界</h2>
+<p><em>(参考时间: 10:00)</em></p>
+<p>功能虽然跑通了，但 <code>snownlp</code> 真的是无懈可击的神器吗？我们继续提升测试用例的难度，探寻其智能边界：</p>
+<h3 id="1_2">异常案例 1：完全中性的客观陈述</h3>
+<ul>
+<li>测试句子：“<strong>今天下午三点开会</strong>”</li>
+<li>预期：没有任何感情色彩，理应判定为“中性”（<code>score ≈ 0.5</code>）；</li>
+<li>实测：<code>snownlp</code> 打出了 <strong><code>0.33</code>（偏消极）</strong>！</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_20.png" alt="中性客观陈述被误判为偏消极" loading="lazy">
+  <p class="video-caption">📷 中性客观陈述被误判为偏消极<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=620" target="_blank" rel="noopener">在 B 站中打开 (00:10:20)</a></p>
+</div>
+
+<h3 id="2_2">异常案例 2：现代网络反讽（阴阳怪气）</h3>
+<ul>
+<li>测试句子：“<strong>呵呵好吧那你好棒</strong>”</li>
+<li>预期：人类一听便知是嘲弄与反讽，属于极度负面/消极；</li>
+<li>实测：<code>snownlp</code> 打出了 <strong><code>0.9+</code>（偏积极）</strong>！因为它单纯识别出了“好”、“棒”等褒义高频词，被字面表象彻底蒙蔽。</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_45.png" alt="反讽文本被单纯基于词频判定为强烈正面夸奖" loading="lazy">
+  <p class="video-caption">📷 反讽文本被单纯基于词频判定为强烈正面夸奖<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=645" target="_blank" rel="noopener">在 B 站中打开 (00:10:45)</a></p>
+</div>
+
+<h3 id="3">异常案例 3：特殊领域戏剧台词</h3>
+<ul>
+<li>测试句子：“<strong>臣妾告发熹贵妃私通温太医</strong>”</li>
+<li>预期：宫斗阴谋与危机情境；</li>
+<li>实测：打出了 <strong><code>0.7+</code>（偏积极）</strong>！</li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_00.png" alt="影视剧台词超出通用模型认知范畴" loading="lazy">
+  <p class="video-caption">📷 影视剧台词超出通用模型认知范畴<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=660" target="_blank" rel="noopener">在 B 站中打开 (00:11:00)</a></p>
+</div>
+
+<h3 id="_3">根因深度剖析：模型是用数据喂出来的</h3>
+<p>为什么会出现上述偏差？
+<code>snownlp</code> 内置的情感模型，在设计之初主要是抓取电商购物网站上的<strong>商品好评与差评评论语料</strong>训练出来的。
+* 它非常擅长处理：<em>“包装精美，物流很快，非常满意”</em> 或 <em>“质量极差，服务态度恶劣，退货”</em>；
+* 但面对缺乏好评差评特征的日常事务通知、深层次反讽修辞、文言古风台词，它完全没有常识，只能按照词频概率强行推导。</p>
+<blockquote>
+<p>[!TIP]
+<strong>所有机器学习模型的核心困境</strong>：
+<strong>模型自身是没有通用世界常识的，它只是擅长处理在其训练集中大量出现过的数据分布</strong>。
+哪怕到了如今的大模型（LLM）时代，模型幻觉与认知盲区依然存在，只是边界被推得更远、伪装得更隐蔽。</p>
+</blockquote>
+<hr />
+<h2 id="7">7. 方案选型技术谱系：如何选择适合的方案？</h2>
+<p><em>(参考时间: 12:10)</em></p>
+<p>既然有更强的大模型（如 DeepSeek、ChatGPT），我们为什么不在本节直接调用云端大模型 API，而选择本地小模型？</p>
+<p>在工业级系统设计中，没有一种技术方案是绝对占优的。技术决策本质上是<strong>全方位权衡（Trade-off）</strong>的结果：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_12_30.png" alt="不同 NLP 与大模型方案全方位对比技术谱系" loading="lazy">
+  <p class="video-caption">📷 不同 NLP 与大模型方案全方位对比技术谱系<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=750" target="_blank" rel="noopener">在 B 站中打开 (00:12:30)</a></p>
+</div>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">对比维度</th>
+<th style="text-align: left;">本地统计小模型 (如 <code>snownlp</code>)</th>
+<th style="text-align: left;">云端商业大模型 API (如 DeepSeek / OpenAI)</th>
+<th style="text-align: left;">开源大模型本地私有化部署 (如 Ollama / vLLM)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>经济成本</strong></td>
+<td style="text-align: left;"><strong>完全免费</strong></td>
+<td style="text-align: left;">按 Token 用量持续计费</td>
+<td style="text-align: left;">需投入高端显卡硬件购置成本</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>网络依赖</strong></td>
+<td style="text-align: left;"><strong>完全离线运行</strong></td>
+<td style="text-align: left;">强依赖公网连接</td>
+<td style="text-align: left;">完全离线局域网运行</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>推理耗时</strong></td>
+<td style="text-align: left;"><strong>毫秒级 (&lt; 5ms)</strong></td>
+<td style="text-align: left;">秒级 (受网络传输与排队影响)</td>
+<td style="text-align: left;">取决于本地 GPU 算力 (几百毫秒至几秒)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>语义理解深度</strong></td>
+<td style="text-align: left;">弱 (仅限关键词统计)</td>
+<td style="text-align: left;"><strong>极强 (懂隐喻、反讽与多轮常识)</strong></td>
+<td style="text-align: left;"><strong>强 (视参数量 7B~70B 而定)</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>数据隐私安全</strong></td>
+<td style="text-align: left;"><strong>绝对安全 (数据不出内存)</strong></td>
+<td style="text-align: left;">文本需上传第三方云厂商</td>
+<td style="text-align: left;"><strong>绝对安全 (数据不出企业内网)</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>运维复杂度</strong></td>
+<td style="text-align: left;">极简 (一行 <code>pip install</code>)</td>
+<td style="text-align: left;">极简 (只需 API Key)</td>
+<td style="text-align: left;">极高 (驱动、显存调度、模型量化)</td>
+</tr>
+</tbody>
+</table>
+<p>对于我们当前的教学演示与文字实验室应用而言，<strong>免成本、无网络依赖、毫秒级响应</strong>的本地库无疑是最佳工程选择。</p>
+<p>而在未来真实的商业产品中，无论你根据预算和精度需求将后端替换为云端大模型还是本地 Ollama，依靠今天建立的 <strong>API 契约守恒</strong>，你的前端系统都能保持零改动，轻松享受后端技术栈升级的红利！</p>
+<hr />
+<h2 id="8">8. 本讲小结与引申：赋予应用持久记忆</h2>
+<p><em>(参考时间: 15:30)</em></p>
+<p>回顾本节内容：
+1. 我们用不到二十行 Python 代码，将 <code>pypinyin</code> 与 <code>snownlp</code> 深度整合进 FastAPI 后端；
+2. 我们亲身体验了前端不改一行代码、全栈功能平滑飞跃的“契约守恒”魅力；
+3. 我们理性验证了传统 NLP 小模型的长处与局限，建立了现代工程选型的全局视野。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_15_30.png" alt="本节全流程总结与下一讲数据库前传预告" loading="lazy">
+  <p class="video-caption">📷 本节全流程总结与下一讲数据库前传预告<br><a href="https://www.bilibili.com/video/BV1c7u861Emf?t=930" target="_blank" rel="noopener">在 B 站中打开 (00:15:30)</a></p>
+</div>
+
+<p>至此，第一笔欠账顺利结清。
+但是，我们的系统目前还面临着第二笔欠账：<strong>缺乏记忆</strong>。
+用户在网页上辛辛苦苦输入测试的好句子，只要随手按一次 F5 刷新页面，所有数据就彻底灰飞烟灭。</p>
+<p>从下一讲（第 26 讲：6.3 数据库前传——文件存储）开始，我们将正式叩开<strong>持久化存储（Persistence）</strong>的大门，从最底层的文本与 JSON 文件存储讲起，一路推演至关系型数据库 SQLite，赋予全栈系统真正的“持久记忆”！</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
