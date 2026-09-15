@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -293,7 +297,8 @@
         <h1 id="20-python-52">第 20 讲：Python 安装和环境设置（5.2）</h1>
 <p>在前面的章节中，我们完成了基于 Next.js 的全栈前端项目开发，并通过两种不同方式完成了自动化部署。从本节开始，我们的全栈探索之旅将正式跨入<strong>后端开发</strong>领域。</p>
 <p>后端编程的第一步，正如前端开发需要预先安装 Node.js 运行时一样，是必须在操作系统中构建稳健、隔离、可复现的 <strong>Python 运行时与依赖管理环境</strong>。本节将深入剖析 Python 多版本共存原理、虚拟环境 <code>venv</code> 的底层隔离机制、与科学计算工具 Conda 的差异定位，并在我们的 <code>zero-to-tech</code> 项目中开辟 <code>backend/</code> 独立工程，完成第一个 Python 程序与第三方网络请求库的集成。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph Frontend [&quot;前端架构 (已完成)&quot;]
         Browser[&quot;浏览器 / 客户端&quot;]
         NextJS[&quot;Next.js / React&quot;]
@@ -312,7 +317,7 @@
     PythonEnv --&gt; VenvIsolation
     VenvIsolation --&gt; PipManager
     PipManager --&gt; ApiServices
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1-python">1. 从前端到后端：为什么需要 Python 运行环境？</h2>
@@ -358,7 +363,8 @@
 <h2 id="2-python">2. Python 版本历史与多版本共存管理</h2>
 <p><em>(参考时间: 04:35)</em></p>
 <p>许多初学者常常困惑：为什么在 macOS 或 Linux 上往往要敲 <code>python3</code>，而在 Windows 或部分环境敲 <code>python</code> 也可以？这背后有一段软件工程演进的阵痛史。</p>
-<pre class="highlight"><code class="language-mermaid">timeline
+<pre class="mermaid">
+timeline
     title Python 历史与解释器命令演进
     1991 : Python 语言诞生
     2000 : Python 2.0 发布 (奠定生态基石)
@@ -366,7 +372,7 @@
     2008-2020 : 割裂过渡期 (Linux/macOS 约定: python 对应 2.x, python3 对应 3.x)
     2020 : Python 2 正式退役 EOL
     现代生态 : 新系统/Windows 逐渐将 python 指令默认指向 Python 3
-</code></pre>
+</pre>
 
 <ol>
 <li><strong>Python 2 与 3 的不兼容大版本裂变</strong>：2008 年发布的 Python 3 修复了早期语言设计层面的大量历史包袱（如 Unicode 字符串处理、print 作为函数等），但彻底不兼容 Python 2。为了保证操作系统内置脚本不崩溃，Linux 与 macOS 形成硬性约定：<code>python</code> 专用于 Python 2，而 <code>python3</code> 指向新版。</li>
@@ -410,7 +416,8 @@ python3.13 script.py
   <p class="video-caption">📷 多项目依赖相同包的不同版本引发全局覆盖冲突<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=605" target="_blank" rel="noopener">在 B 站中打开 (00:10:05)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">graph TD
+<pre class="mermaid">
+graph TD
     subgraph GlobalTrouble [&quot;未隔离模式（全局污染与版本冲突）&quot;]
         GlobalPython[&quot;全局 Python /site-packages&quot;]
         ProjA[&quot;Project A&lt;br/&gt;需要 Pandas 1.5&quot;] --&gt;|覆盖升级| GlobalPython
@@ -423,7 +430,7 @@ python3.13 script.py
         ProjA_ISO[&quot;Project A 代码&quot;] --&gt; VenvA
         ProjB_ISO[&quot;Project B 代码&quot;] --&gt; VenvB
     end
-</code></pre>
+</pre>
 
 <p>如上图所示，当 Project A 依赖 <code>pandas 1.5</code>，而 Project B 依赖 <code>pandas 2.2</code> 时，全局安装会导致后安装的版本强制覆盖前者，导致依赖旧接口的项目直接运行崩溃。</p>
 <p>解决方案与前端哲学一致：<strong>依赖必须跟随项目走</strong>。Python 官方自 3.3 起内置了轻量级虚拟环境工具 <strong><code>venv</code></strong>。</p>
@@ -497,7 +504,8 @@ source .venv/bin/activate
 <h2 id="5-conda-venv">5. Conda 用户避坑：与 venv 的选型决策</h2>
 <p><em>(参考时间: 24:10)</em></p>
 <p>很多从事人工智能、数据分析的同学电脑中已经预装了 Anaconda 或 Miniconda。打开终端时，行首默认会带有一个 <code>(base)</code> 前缀。</p>
-<pre class="highlight"><code class="language-mermaid">graph LR
+<pre class="mermaid">
+graph LR
     subgraph CondaMode [&quot;Conda 集中化管理模式&quot;]
         CondaCore[&quot;Conda 全局安装器&quot;]
         EnvBase[&quot;~/.conda/envs/base&quot;]
@@ -518,7 +526,7 @@ source .venv/bin/activate
         ProjRoot --&gt; LocalVenv
         ProjRoot --&gt; ReqTxt
     end
-</code></pre>
+</pre>
 
 <div class="video-card screenshot-card">
   <img src="images/shot_00_25_10.png" alt="Conda 集中管理机制与全局 base 终端状态" loading="lazy">
@@ -672,7 +680,8 @@ print(resp.json())
 <h3 id="requirementstxt">依赖版本固化：<code>requirements.txt</code></h3>
 <p>既然 <code>.venv</code> 目录被 Git 忽略，团队其他成员拉取代码或后续部署到云端 Linux 服务器时，如何还原完全一致的 Python 依赖生态？</p>
 <p>前端使用 <code>package.json</code> 记录包信息，而 Python 生态的标准规范是 <strong><code>requirements.txt</code></strong>：</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     subgraph DevEnv [&quot;本地开发环境 (backend/.venv)&quot;]
         PipEnv[&quot;已安装 requests, urllib3 等&quot;]
         PipFreeze[&quot;pip freeze &gt; requirements.txt&quot;]
@@ -689,7 +698,7 @@ print(resp.json())
         ReqFile --&gt;|git clone| ServerPip
         ServerPip --&gt; BuildNewEnv[&quot;.venv 100% 还原一模一样依赖环境&quot;]
     end
-</code></pre>
+</pre>
 
 <p>在激活的虚拟环境中，将当前安装的所有库及其精确版本号导出：</p>
 <pre class="highlight"><code class="language-bash">pip freeze &gt; requirements.txt
@@ -760,27 +769,50 @@ urllib3==2.3.0
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
