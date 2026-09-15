@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 22 讲：FastAPI 入门（5.4）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="22-fastapi-54">第 22 讲：FastAPI 入门（5.4）</h1>
+<p>在上一节中，我们仅仅依靠 Python 内置的 <code>http.server</code> 模块，“纯手工”搓出了一个基础的 HTTP API。虽然代码量不算多，但为了把一段简简单单的个人资料 JSON 数据发送出去，我们耗费了大量精力去处理 HTTP 协议底层的各种琐碎细节：逐行比对路径、手工写入状态码与响应头、精准输出 <code>\r\n</code> 空行、做二进制流编码与 404 兜底。</p>
+<p>更关键的是，上一讲我们仅仅实现了一个最基础的 <code>GET</code> 接口。如果面对带有复杂参数、需要校验合法性的 <code>POST</code> 接口，手搓代码的繁重程度将呈指数级上升。</p>
+<p>从本节开始，我们将告别手搓杂活，正式引入现代 Python 生态中最流行的高性能后端框架——<strong>FastAPI</strong>。我们将用极度优雅的几行代码重构上一节的接口，并进一步实现带有数据校验闸门的 <code>POST</code> 分析接口，直观体会框架带来的巨大生产力跃升。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph HandMadeHell [&quot;上一节：手搓原生的繁杂杂活&quot;]
+        HM1[&quot;手动比对 if self.path == ...&quot;]
+        HM2[&quot;手动 send_response(200)&quot;]
+        HM3[&quot;手动 send_header Content-Type&quot;]
+        HM4[&quot;手动 end_headers 空行&quot;]
+        HM5[&quot;手动 json.dumps + encode('utf-8')&quot;]
+        HM6[&quot;手动 else 分支 404 兜底&quot;]
+    end
+
+    subgraph FastAPIElegance [&quot;本节：FastAPI 声明式现代架构&quot;]
+        App[&quot;app = FastAPI()&quot;]
+        RouteDecorator[&quot;@app.get('/api/profile')&quot;]
+        PyFunc[&quot;def get_profile():\n    return profile&quot;]
+        UvicornDriver[&quot;Uvicorn ASGI 异步引擎 (自动托管网络/并发/状态码/序列化/404)&quot;]
+        SwaggerAuto[&quot;自动生成 /docs 交互式 Swagger 文档&quot;]
+        PydanticGate[&quot;Pydantic 数据模型自动校验 (防注入/类型拦截)&quot;]
+
+        App --&gt; RouteDecorator --&gt; PyFunc
+        App --&gt; UvicornDriver
+        App --&gt; SwaggerAuto
+        App --&gt; PydanticGate
+    end
+
+    HandMadeHell -.-&gt;|框架封装演进| FastAPIElegance
+</code></pre>
+
+<hr />
+<h2 id="1">1. 为什么需要框架？从协议杂活到专注业务</h2>
+<p><em>(参考时间: 00:50)</em></p>
+<p>在上一讲手搓代码时，我们写的 80% 以上的代码都在“伺候” HTTP 协议：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_00_45.png" alt="上一讲手搓代码与本节核心重构目标" loading="lazy">
+  <p class="video-caption">📷 上一讲手搓代码与本节核心重构目标<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=45" target="_blank" rel="noopener">在 B 站中打开 (00:00:45)</a></p>
+</div>
+
+<p>但从真实业务需求的角度来看，我们的诉求其实非常朴素：</p>
+<blockquote>
+<p><strong>“当外界请求 <code>/api/profile</code> 时，把个人资料数据字典送出去。”</strong></p>
+</blockquote>
+<p>这就是<strong>Web 后端框架（Web Framework）</strong>诞生的根本价值：<strong>将所有与具体业务无关的通用网络传输、报文解析、路由派发、序列化和错误兜底全部高度内聚封装，让开发者能够 100% 聚焦于核心业务逻辑本身</strong>。</p>
+<hr />
+<h2 id="2-python">2. Python 后端三大框架横向对比</h2>
+<p><em>(参考时间: 02:15)</em></p>
+<p>在 Python 浩瀚的开源生态中，有三个家喻户晓的 Web 框架：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_02_30.png" alt="Python 常见三大后端框架定位对比" loading="lazy">
+  <p class="video-caption">📷 Python 常见三大后端框架定位对比<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=150" target="_blank" rel="noopener">在 B 站中打开 (00:02:30)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">mindmap
+  root((Python 后端三大框架))
+    Flask
+      老牌微框架 (Micro-framework)
+      极简核心，按需装配插件
+      适合快速原型与小型脚本
+    Django
+      大而全 (Batteries-Included)
+      内置 ORM、认证系统、Admin 运营后台
+      适合中大型企业级内容管理与全包项目
+    FastAPI
+      现代异步首选 (Modern &amp; Async)
+      面向现代 API 设计，基于 Python 类型提示
+      内置 Pydantic 自动数据校验
+      自动生成交互式 OpenAPI / Swagger 文档
+      性能媲美 NodeJS 与 Go
+</code></pre>
+
+<h3 id="fastapi">为什么本课程选择 FastAPI？</h3>
+<ol>
+<li><strong>上手门槛低且代码极致优雅</strong>：基于 Python 原生 Type Hints 类型注解，几乎不需要学习冗长的心智模型；</li>
+<li><strong>自动化开箱即用</strong>：无需额外安装复杂库，自带数据解析、请求拦截与交互式接口文档；</li>
+<li><strong>顶级的官方文档</strong>：FastAPI 官网的用户教程（User Guide）编写极其详实细腻，不仅教“怎么用”，还通俗解释“为什么这么设计”，被无数开发者誉为绝佳的工程学习教材。</li>
+</ol>
+<hr />
+<h2 id="3-fastapi-uvicorn">3. 架构分工：FastAPI 与 Uvicorn 的默契配合</h2>
+<p><em>(参考时间: 05:20)</em></p>
+<p>在手搓代码中，我们既写了处理逻辑（Handler），又在末尾调用了 <code>HTTPServer.serve_forever()</code> 去监听端口。但在现代化框架工程中，这两项职责进行了彻底解耦：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_06_10.png" alt="FastAPI 与 Uvicorn 职责分工图解" loading="lazy">
+  <p class="video-caption">📷 FastAPI 与 Uvicorn 职责分工图解<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=370" target="_blank" rel="noopener">在 B 站中打开 (00:06:10)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor Client as 外部客户端 (浏览器 / curl)
+    participant Uvicorn as Uvicorn (ASGI 网络服务器)
+    participant FastAPI as FastAPI (业务应用层)
+    participant Handler as 路由处理函数 (def get_profile)
+
+    Client-&gt;&gt;Uvicorn: 1. 发送 HTTP 请求 (访问 8000 端口)
+    Note over Uvicorn: 负责网络套接字监听与高并发连接维护
+    Uvicorn-&gt;&gt;FastAPI: 2. 转换为标准 ASGI 请求事件派发
+    FastAPI-&gt;&gt;FastAPI: 3. 匹配路由规则 (@app.get)
+    FastAPI-&gt;&gt;Handler: 4. 执行业务逻辑
+    Handler--&gt;&gt;FastAPI: 5. 返回原生 Python 字典 (profile)
+    Note over FastAPI: 自动完成 JSON 序列化、写入 Content-Type
+    FastAPI--&gt;&gt;Uvicorn: 6. 返回 HTTP 响应报文事件
+    Uvicorn--&gt;&gt;Client: 7. 将二进制流推回客户端网络连接
+</code></pre>
+
+<ul>
+<li><strong>FastAPI（应用大脑）</strong>：决定接口做什么（路由、校验、组装数据）；</li>
+<li><strong>Uvicorn（动力引擎）</strong>：负责监听端口、维持网络连接，并将 HTTP 数据流转交给 FastAPI。</li>
+</ul>
+<h3 id="fastapi_1">安装 FastAPI 标准全家桶</h3>
+<p>确保位于 <code>zero-to-tech/backend/</code> 目录下且虚拟环境处于激活状态，执行安装命令：</p>
+<pre class="highlight"><code class="language-bash">pip install &quot;fastapi[standard]&quot;
+</code></pre>
+
+<p><img alt="pip 安装 fastapi[standard] 标准套餐过程" src="SCREENSHOT:00:08:35" /></p>
+<blockquote>
+<p>[!NOTE]
+包名后方中括号 <code>[standard]</code> 是 pip 的“扩展套餐”语法，表示在安装 FastAPI 本体的同时，自动捆绑拉取官方推荐的全部标准配件（包括高性能 ASGI 服务器 <code>uvicorn</code>、类型校验库 <code>pydantic</code> 等），省去逐一单独配置的麻烦。</p>
+</blockquote>
+<hr />
+<h2 id="4-get-apiprofile">4. 极简重构：重写 <code>GET /api/profile</code></h2>
+<p><em>(参考时间: 09:15)</em></p>
+<p>为了保留历史学习足迹，我们先将上一节的手搓文件重命名备份：</p>
+<pre class="highlight"><code class="language-bash">mv main.py handmade.py
+</code></pre>
+
+<p>接着，新建全新的 <code>main.py</code> 并写入以下代码：</p>
+<pre class="highlight"><code class="language-python">from fastapi import FastAPI
+
+app = FastAPI()
+
+profile = {
+    &quot;heroTitle&quot;: &quot;关于我&quot;,
+    &quot;heroSubtitle&quot;: &quot;项目, 创意, 灵感, 心得, 我的作品&quot;,
+}
+
+@app.get(&quot;/api/profile&quot;)
+def get_profile():
+    return profile
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_11_30.png" alt="手搓原生版与 FastAPI 框架版的代码量悬殊对比" loading="lazy">
+  <p class="video-caption">📷 手搓原生版与 FastAPI 框架版的代码量悬殊对比<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=690" target="_blank" rel="noopener">在 B 站中打开 (00:11:30)</a></p>
+</div>
+
+<p>对比上一节手搓的数十行代码，框架重构后的代码仅仅只有 10 余行！</p>
+<h3 id="_1">核心语法剖析</h3>
+<ul>
+<li><code>app = FastAPI()</code>：创建框架的核心应用实例；</li>
+<li><code>@app.get("/api/profile")</code>：<strong>路由装饰器（Route Decorator）</strong>。向框架注册规则——凡是发往 <code>/api/profile</code> 的 <code>GET</code> 请求，全部交由下方绑定的函数处理；</li>
+<li><code>return profile</code>：无需调用 <code>json.dumps()</code>，无需 <code>.encode("utf-8")</code>，直接返回原生 Python 字典，框架会自动将其序列化为合法的 JSON 字符串，并自动在响应头中附带 <code>Content-Type: application/json</code> 和状态码 <code>200 OK</code>。</li>
+</ul>
+<hr />
+<h2 id="5">5. 服务的运行与开发模式热重载</h2>
+<p><em>(参考时间: 13:00)</em></p>
+<h3 id="uvicorn">传统 Uvicorn 启动方式</h3>
+<pre class="highlight"><code class="language-bash">uvicorn main:app --reload
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_40.png" alt="使用 uvicorn 启动并开启热重载" loading="lazy">
+  <p class="video-caption">📷 使用 uvicorn 启动并开启热重载<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=880" target="_blank" rel="noopener">在 B 站中打开 (00:14:40)</a></p>
+</div>
+
+<ul>
+<li><code>main:app</code>：冒号左侧的 <code>main</code> 对应 Python 文件名 <code>main.py</code>；右侧的 <code>app</code> 对应代码内部创建的 <code>app = FastAPI()</code> 实例对象；</li>
+<li><code>--reload</code>：<strong>开启热更新（Hot Reloading）</strong>。文件保存后无需手动重启终端，后台进程会自动重新加载最新代码。</li>
+</ul>
+<h3 id="fastapi-dev">现代化官方标准命令：<code>fastapi dev</code></h3>
+<p>FastAPI 新版本引入了专为开发量身定制的集成指令：</p>
+<pre class="highlight"><code class="language-bash">fastapi dev
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_15_55.png" alt="使用 fastapi dev 现代化指令一键启动" loading="lazy">
+  <p class="video-caption">📷 使用 fastapi dev 现代化指令一键启动<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=955" target="_blank" rel="noopener">在 B 站中打开 (00:15:55)</a></p>
+</div>
+
+<p><code>fastapi dev</code> 默认自动定位当前目录下的 <code>main.py</code> 及其中的 <code>app</code>，并全自动开启热更新与详细调试日志，更加简洁直观。</p>
+<blockquote>
+<p>[!TIP]
+如果首次运行提示 <code>command not found: fastapi</code>，说明终端尚未更新虚拟环境的可执行程序缓存，在终端执行 <code>hash -r</code> 刷新命令索引即可。</p>
+</blockquote>
+<h3 id="404">接口调用与 404 智能兜底</h3>
+<p>在另一个终端使用 <code>curl</code> 验证接口：</p>
+<pre class="highlight"><code class="language-bash">curl http://localhost:8000/api/profile
+</code></pre>
+
+<p>终端立即返还了正确的 JSON 数据：</p>
+<pre class="highlight"><code class="language-json">{&quot;heroTitle&quot;:&quot;关于我&quot;,&quot;heroSubtitle&quot;:&quot;项目, 创意, 灵感, 心得, 我的作品&quot;}
+</code></pre>
+
+<p>如果故意访问一个不存在的路由（如 <code>curl http://localhost:8000/hi</code>）：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_17_30.png" alt="测试未定义路径由 FastAPI 自动返回标准 404 JSON" loading="lazy">
+  <p class="video-caption">📷 测试未定义路径由 FastAPI 自动返回标准 404 JSON<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1050" target="_blank" rel="noopener">在 B 站中打开 (00:17:30)</a></p>
+</div>
+
+<p>FastAPI 会自动拦截并返回标准的 HTTP 404 响应：</p>
+<pre class="highlight"><code class="language-json">{&quot;detail&quot;:&quot;Not Found&quot;}
+</code></pre>
+
+<p>我们无需编写任何 <code>else</code> 兜底逻辑，框架已将异常处理打磨至极致。</p>
+<h3 id="git">配置 Git 忽略文件</h3>
+<p>服务运行后，Python 会在项目根目录下生成 <code>__pycache__/</code> 目录，存放编译好的 <code>.pyc</code> 字节码文件以加速下次启动。此类缓存属于运行产物，严禁提交进代码仓库。</p>
+<p>在根目录 <code>.gitignore</code> 中追加：</p>
+<pre class="highlight"><code class="language-gitignore"># Python 字节码缓存目录与文件
+__pycache__/
+*.pyc
+</code></pre>
+
+<hr />
+<h2 id="6-swagger">6. 神仙特性：自动生成的 Swagger 交互式文档</h2>
+<p><em>(参考时间: 19:20)</em></p>
+<p>启动服务时，控制台有一行引人注目的日志：</p>
+<pre class="highlight"><code class="language-text">INFO:     Documentation at: http://127.0.0.1:8000/docs
+</code></pre>
+
+<p>在浏览器中直接访问该地址，屏幕上呈现出一个完全由框架根据代码静态推导生成的 <strong>Swagger UI 交互式接口文档</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_19_50.png" alt="浏览器打开 /docs 自动呈现 Swagger UI 交互式文档" loading="lazy">
+  <p class="video-caption">📷 浏览器打开 /docs 自动呈现 Swagger UI 交互式文档<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1190" target="_blank" rel="noopener">在 B 站中打开 (00:19:50)</a></p>
+</div>
+
+<p>点开接口条目，点击右侧的 <strong><code>Try it out</code></strong> 并点击 <strong><code>Execute</code></strong>，网页将直接向本地运行的后端发起真实的 HTTP 请求，并在下方清晰展示 <code>Request URL</code>、<code>Response Body</code> 以及 <code>Response Headers</code>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_20_15.png" alt="在 Swagger UI 中一键在线测试接口与查看响应" loading="lazy">
+  <p class="video-caption">📷 在 Swagger UI 中一键在线测试接口与查看响应<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1215" target="_blank" rel="noopener">在 B 站中打开 (00:20:15)</a></p>
+</div>
+
+<p>这彻底解决了传统全栈开发中“代码更新了但文档遗漏未改”的行业通病，前后端协作调试效率成倍提升。</p>
+<hr />
+<h2 id="7-post-apianalyze-pydantic">7. 实战进阶：增加 <code>POST /api/analyze</code> 与 Pydantic 校验闸门</h2>
+<p><em>(参考时间: 21:00)</em></p>
+<p>在前端第 3 模块中，我们曾经开发过一个“文字实验室（Text Lab）”组件，用户在文本框输入文字后，页面需要展示原文、拼音、字数评分与情感倾向卡片。</p>
+<p>现在，我们为该业务量身打造一个 <code>POST</code> 接口。</p>
+<h3 id="_2">业务接口需求定义</h3>
+<ol>
+<li><strong>客户端入参</strong>：必须提交一个 JSON 对象，包含文本字段 <code>text</code>（字符串类型）；</li>
+<li><strong>服务端返回</strong>：返回带有四个卡片结果的 JSON 数据。</li>
+</ol>
+<p>在 <code>main.py</code> 中引入 Pydantic 的 <code>BaseModel</code> 并扩建代码：</p>
+<pre class="highlight"><code class="language-python">from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# 1. 定义入参数据结构规范 (Schema)
+class AnalyzeRequest(BaseModel):
+    text: str
+
+# 原个人资料数据保持不变
+profile = {
+    &quot;heroTitle&quot;: &quot;关于我&quot;,
+    &quot;heroSubtitle&quot;: &quot;项目, 创意, 灵感, 心得, 我的作品&quot;,
+}
+
+@app.get(&quot;/api/profile&quot;)
+def get_profile():
+    return profile
+
+# 2. 注册 POST 路由并挂载请求体模型
+@app.post(&quot;/api/analyze&quot;)
+def analyze(req: AnalyzeRequest):
+    return {
+        &quot;text&quot;: req.text,
+        &quot;score&quot;: 0.5,
+        &quot;label&quot;: &quot;偏平静&quot;,
+        &quot;pinyin&quot;: &quot;（模块 6 再说）&quot;,
+    }
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_45.png" alt="定义 BaseModel 与 POST 接口代码实现" loading="lazy">
+  <p class="video-caption">📷 定义 BaseModel 与 POST 接口代码实现<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1425" target="_blank" rel="noopener">在 B 站中打开 (00:23:45)</a></p>
+</div>
+
+<h3 id="pydantic">Pydantic 数据校验闸门机制</h3>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    ClientReq[&quot;客户端 POST /api/analyze&lt;br/&gt;发送 JSON 载荷&quot;] --&gt; Gateway{&quot;FastAPI + Pydantic&lt;br/&gt;数据校验闸门&quot;}
+
+    Gateway -- &quot;符合规范 (含合法 text 字段)&quot; --&gt; SuccessBranch[&quot;通过拦截&lt;br/&gt;进入 analyze 业务函数&quot;]
+    SuccessBranch --&gt; Return200[&quot;返回 200 OK + 分析结果 JSON&quot;]
+
+    Gateway -- &quot;不符合规范 (缺少 text 或类型错误)&quot; --&gt; RejectBranch[&quot;直接就地拦截&lt;br/&gt;阻断进入业务层!&quot;]
+    RejectBranch --&gt; Return422[&quot;自动返回 422 Unprocessable Entity&lt;br/&gt;+ 精确指明出错字段与原因&quot;]
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_25_50.png" alt="Pydantic 校验闸门示意图：合法通过 vs 非法就地拦截" loading="lazy">
+  <p class="video-caption">📷 Pydantic 校验闸门示意图：合法通过 vs 非法就地拦截<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1550" target="_blank" rel="noopener">在 B 站中打开 (00:25:50)</a></p>
+</div>
+
+<p>我们仅仅在函数入参中写了 <code>req: AnalyzeRequest</code>，FastAPI 就会在底层自动调用 Pydantic 执行严格的格式审查。</p>
+<h3 id="_3">正确请求测试</h3>
+<p>在终端中发起符合规约的 POST 请求：</p>
+<pre class="highlight"><code class="language-bash">curl http://localhost:8000/api/analyze \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;text&quot;: &quot;今天的风很轻，适合把想法写下来&quot;}'
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_27_40.png" alt="正确 POST 请求成功获取四个字段的分析数据" loading="lazy">
+  <p class="video-caption">📷 正确 POST 请求成功获取四个字段的分析数据<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1660" target="_blank" rel="noopener">在 B 站中打开 (00:27:40)</a></p>
+</div>
+
+<p>终端成功获得期望的数据结构返回：</p>
+<pre class="highlight"><code class="language-json">{&quot;text&quot;:&quot;今天的风很轻，适合把想法写下来&quot;,&quot;score&quot;:0.5,&quot;label&quot;:&quot;偏平静&quot;,&quot;pinyin&quot;:&quot;（模块 6 再说）&quot;}
+</code></pre>
+
+<hr />
+<h2 id="8-422-vs-500-traceback">8. 调试与排错：422 vs 500 与 Traceback 抓漏秘籍</h2>
+<p><em>(参考时间: 28:00)</em></p>
+<h3 id="422-unprocessable-entity">场景一：客户端参数错误（422 Unprocessable Entity）</h3>
+<p>如果客户端不小心把 <code>text</code> 字段少打了一个字母写成了 <code>txt</code>：</p>
+<pre class="highlight"><code class="language-bash">curl -i -X POST http://localhost:8000/api/analyze \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;txt&quot;: &quot;你好，全栈！&quot;}'
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_28_30.png" alt="客户端传参错误由框架自动拦截并返回 422 状态码" loading="lazy">
+  <p class="video-caption">📷 客户端传参错误由框架自动拦截并返回 422 状态码<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1710" target="_blank" rel="noopener">在 B 站中打开 (00:28:30)</a></p>
+</div>
+
+<p>终端立即拦截并返回了详细的报错清单：</p>
+<pre class="highlight"><code class="language-http">HTTP/1.1 422 Unprocessable Entity
+content-type: application/json
+</code></pre>
+
+<pre class="highlight"><code class="language-json">{
+  &quot;detail&quot;: [
+    {
+      &quot;type&quot;: &quot;missing&quot;,
+      &quot;loc&quot;: [&quot;body&quot;, &quot;text&quot;],
+      &quot;msg&quot;: &quot;Field required&quot;,
+      &quot;input&quot;: {&quot;txt&quot;: &quot;你好，全栈！&quot;}
+    }
+  ]
+}
+</code></pre>
+
+<blockquote>
+<p>[!TIP]
+<strong>HTTP 状态码的责任划分</strong>：
+* <strong><code>4xx</code>（如 422）</strong>：代表<strong>调用方（客户端）的过错</strong>。请求参数缺失或非法，服务端守门人拒绝入内；
+* <strong><code>5xx</code>（如 500）</strong>：代表<strong>被调用方（服务端）的过错</strong>。业务代码逻辑抛出未捕获的严重异常。</p>
+</blockquote>
+<h3 id="bug500-internal-server-error">场景二：服务端代码 Bug（500 Internal Server Error）</h3>
+<p>假设后端开发者在处理函数中手滑写错，试图访问不存在的属性（如 <code>return {"text": req.txt, ...}</code>）：</p>
+<p>客户端发送正确的请求后，服务端直接崩溃并返回：</p>
+<pre class="highlight"><code class="language-http">HTTP/1.1 500 Internal Server Error
+</code></pre>
+
+<pre class="highlight"><code class="language-json">{&quot;detail&quot;:&quot;Internal Server Error&quot;}
+</code></pre>
+
+<p>此时客户端只知道服务器内部出错了，但无法探知具体的代码行。<strong>此时排查问题的唯一阵地是服务端的控制台终端</strong>。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_32_15.png" alt="服务端终端打印的详细 Python Traceback 报错分析" loading="lazy">
+  <p class="video-caption">📷 服务端终端打印的详细 Python Traceback 报错分析<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=1935" target="_blank" rel="noopener">在 B 站中打开 (00:32:15)</a></p>
+</div>
+
+<h3 id="python-traceback">读懂 Python Traceback 的两大诀窍</h3>
+<p>面对终端刷出的一长串调用栈，切忌慌乱关掉窗口。掌握以下两个排查顺序，10 秒内定位根因：</p>
+<ol>
+<li><strong>第一眼直奔最底行</strong>：最末尾的一行直接道破了错误原因（Root Cause）：
+   <code>text
+   AttributeError: 'AnalyzeRequest' object has no attribute 'txt'</code></li>
+<li><strong>从下往上找自己编写的文件</strong>：跳过框架和 Python 库内部的繁杂栈帧，寻找带有 <code>main.py</code> 的行号标识：
+   <code>text
+   File ".../zero-to-tech/backend/main.py", line 28, in analyze_text</code>
+   清晰定位第 28 行！将 <code>req.txt</code> 改回 <code>req.text</code> 保存，热重载自动修复，服务满血复活。</li>
+</ol>
+<hr />
+<h2 id="9">9. 依赖固化与版本提交</h2>
+<p><em>(参考时间: 33:40)</em></p>
+<p>本节通过 <code>pip install "fastapi[standard]"</code> 引入了完整的现代后端技术栈。按照工程规范，必须将更新后的依赖版本精确写入清单：</p>
+<pre class="highlight"><code class="language-bash">pip freeze &gt; requirements.txt
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_25.png" alt="重新生成 requirements.txt 固化 FastAPI 与全套生态依赖" loading="lazy">
+  <p class="video-caption">📷 重新生成 requirements.txt 固化 FastAPI 与全套生态依赖<br><a href="https://www.bilibili.com/video/BV1LW3K63ExS?t=2065" target="_blank" rel="noopener">在 B 站中打开 (00:34:25)</a></p>
+</div>
+
+<p>此时打开 <code>requirements.txt</code>，可以看到 <code>fastapi</code>、<code>uvicorn</code>、<code>pydantic</code>、<code>starlette</code> 等数十个核心依赖库均已精确锚定版本号。</p>
+<p>在 Git 中完成本次里程碑的提交：</p>
+<pre class="highlight"><code class="language-bash">git add main.py handmade.py requirements.txt .gitignore
+git commit -m &quot;feat: 使用 FastAPI 重构后端并实现参数校验与自动化文档&quot;
+</code></pre>
+
+<hr />
+<h2 id="10">10. 本节小结与下一阶段展望</h2>
+<p><em>(参考时间: 35:00)</em></p>
+<p>在本节中，我们见证了从原生手搓到现代 Web 框架的降维式提升：
+* <strong>路由派发</strong>：从繁复的字符串 <code>if...else</code> 进化为优雅的 <code>@app.get</code> / <code>@app.post</code> 装饰器；
+* <strong>异步引擎</strong>：利用 Uvicorn 实现了高并发请求接管与热更新开发体验；
+* <strong>数据校验</strong>：基于 Pydantic 的 <code>BaseModel</code> 筑起了牢固的数据防线；
+* <strong>交互文档</strong>：开箱即用的 <code>/docs</code> Swagger UI 彻底重塑了接口自解释与在线调试标准。</p>
+<p>此时此刻，我们的前端页面在 <code>localhost:3000</code> 优雅呈现，后端接口在 <code>localhost:8000</code> 蓄势待发。然而，前后端之间依然是一座孤岛。在下一讲中，我们将让前端正式跨越端口调用这两个后端接口，并彻底攻克现代全栈开发中无人能逃的经典关卡——<strong>跨域资源共享（CORS）</strong>。</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
