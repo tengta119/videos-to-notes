@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -296,7 +300,8 @@
 2. <strong>后端工程</strong>：基于 FastAPI 构建了两个接口——<code>GET /api/profile</code>（获取个人主页数据）与 <code>POST /api/analyze</code>（提交文本并进行校验与多维度分析），但此前仅在终端中使用 <code>curl</code> 进行过单元调试。</p>
 <p>此时此刻，前端与后端犹如两个各自能跑、却互不相识的独立王国。</p>
 <p>本节我们将正式拉开<strong>前后端集成联调（Integration）</strong>的序幕，让运行在浏览器中的前端脚本跨越端口向后端发起真实请求。在此过程中，我们将直面现代 Web 全栈开发中最著名的经典门槛——<strong>跨源资源共享（CORS）</strong>与 <strong>OPTIONS 预检（Preflight）机制</strong>，并建立生产级的环境变量集中配置体系。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph FrontendApp [&quot;前端应用 (Next.js 客户端)&quot;]
         direction TB
         BrowserPage[&quot;浏览器页面 (http://localhost:3000)&quot;]
@@ -333,7 +338,7 @@
     FetchModule --&gt; SecurityBorder
     SecurityBorder &lt;--&gt;|HTTP 报文交互| BackendApp
     CORSResponse --&gt;|校验通过，解除拦截| BrowserPage
-</code></pre>
+</pre>
 
 <hr />
 <h2 id="1">1. 联调准备：双进程常驻与调试环境规划</h2>
@@ -485,13 +490,14 @@ has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is pres
 </blockquote>
 <h3 id="origin">什么是“源”（Origin）？同源三要素</h3>
 <p>对于浏览器而言，一个合法的“源”由三项绝对要素共同界定：</p>
-<pre class="highlight"><code class="language-mermaid">classDiagram
+<pre class="mermaid">
+classDiagram
     class OriginIdentity {
         +1. 协议 (Protocol: 如 http vs https)
         +2. 域名 (Domain / Host: 如 localhost vs 127.0.0.1)
         +3. 端口 (Port: 如 3000 vs 8000)
     }
-</code></pre>
+</pre>
 
 <p>三者只要有<strong>任意一项不完全一致</strong>，浏览器便将其视为两个互不信任的“不同源（Cross-Origin）”。在我们的联调场景中：
 * 前端页面跑在 <code>http://localhost:3000</code>；
@@ -521,12 +527,13 @@ has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is pres
   <p class="video-caption">📷 中间件在请求输入与响应输出关口上的必经之路图解<br><a href="https://www.bilibili.com/video/BV13M3U6HEnk?t=1155" target="_blank" rel="noopener">在 B 站中打开 (00:19:15)</a></p>
 </div>
 
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     ClientReq[&quot;客户端 HTTP 请求&quot;] --&gt; MW_In[&quot;CORSMiddleware 预处理&quot;]
     MW_In --&gt; RouteLogic[&quot;FastAPI 业务路由处理&quot;]
     RouteLogic --&gt; MW_Out[&quot;CORSMiddleware 后置处理&lt;br/&gt;(统一加盖 Access-Control-Allow-Origin 头)&quot;]
     MW_Out --&gt; ClientResp[&quot;浏览器客户端接收带授权的响应&quot;]
-</code></pre>
+</pre>
 
 <h3 id="fastapi-corsmiddleware">在 FastAPI 中挂载 CORSMiddleware</h3>
 <p>在 <code>zero-to-tech/backend/main.py</code> 中引入并激活中间件：</p>
@@ -591,7 +598,8 @@ app.add_middleware(
 </tr>
 </tbody>
 </table>
-<pre class="highlight"><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">
+sequenceDiagram
     autonumber
     actor Browser as 浏览器
     participant Middleware as 后端 CORSMiddleware
@@ -608,7 +616,7 @@ app.add_middleware(
         Browser-&gt;&gt;API: 3. 正式发出真正的 POST /api/analyze 业务请求
         API--&gt;&gt;Browser: 4. 返回实际分析结果 JSON
     end
-</code></pre>
+</pre>
 
 <div class="video-card screenshot-card">
   <img src="images/shot_00_25_50.png" alt="简单请求与复杂请求的预检逻辑机制图解" loading="lazy">
@@ -656,7 +664,8 @@ app.add_middleware(
 <p><em>(参考时间: 33:00)</em></p>
 <p>功能虽然全部跑通，但目前的代码中埋藏着一个极其危险的隐患：
 我们在 <code>HomeView.tsx</code> 和 <code>InputCard.tsx</code> 中，直接将 <code>http://localhost:8000</code> 这串 URL 字符串硬编码（Hardcode）写死在了组件内部。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart TD
+<pre class="mermaid">
+flowchart TD
     subgraph BadPractice [&quot;反模式：代码内硬编码地址&quot;]
         CodeComp1[&quot;HomeView.tsx: fetch('http://localhost:8000')&quot;]
         CodeComp2[&quot;InputCard.tsx: fetch('http://localhost:8000')&quot;]
@@ -672,7 +681,7 @@ app.add_middleware(
         ProcessEnv --&gt; CodeComp1_ISO[&quot;组件 1 读取配置&quot;]
         ProcessEnv --&gt; CodeComp2_ISO[&quot;组件 2 读取配置&quot;]
     end
-</code></pre>
+</pre>
 
 <p>在真实生产中，开发机是 <code>localhost:8000</code>，测试机是局域网 IP，云端生产机是顶级域名。如果写死在代码里，每次发布部署都必须修改源码并重新提交 Git，这是重大的工程禁忌。</p>
 <p><strong>规则：配置与代码严格分离</strong>。</p>
@@ -757,27 +766,50 @@ const res = await fetch(`${API}/api/analyze`, {
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->
