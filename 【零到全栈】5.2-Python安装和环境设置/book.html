@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 20 讲：Python 安装和环境设置（5.2）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── 基础重置 ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            color-scheme: light;
+            --bg-primary: #f7f7f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef0f3;
+            --bg-code: #f2f3f5;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #6e7781;
+            --accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.08);
+            --border: #d9dce1;
+            --border-subtle: #e7e9ec;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif SC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── 文章容器 ── */
+        .book-content {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 32px 120px;
+        }
+
+        /* ── 标题 ── */
+        h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 56px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 36px 0 12px;
+        }
+
+        /* ── 段落与文字 ── */
+        p {
+            margin: 0 0 16px;
+            color: var(--text-primary);
+        }
+
+        strong {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        em {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ── 引用 ── */
+        blockquote {
+            margin: 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            color: var(--text-secondary);
+        }
+        blockquote p { margin: 0; }
+
+        /* ── 列表 ── */
+        ul, ol {
+            margin: 12px 0 20px 24px;
+            color: var(--text-primary);
+        }
+        li {
+            margin: 6px 0;
+        }
+
+        /* ── 分割线 ── */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 48px 0;
+        }
+
+        /* ── 表格 ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        thead {
+            background: var(--bg-card);
+        }
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-align: left;
+            color: var(--accent);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        tbody tr {
+            background: var(--bg-secondary);
+            transition: background 0.15s;
+        }
+        tbody tr:hover {
+            background: var(--bg-card);
+        }
+
+        /* ── 代码 ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.88em;
+            color: #6d28d9;
+        }
+
+        pre {
+            margin: 20px 0;
+            padding: 20px 24px;
+            background: var(--bg-code);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        /* ── 视频嵌入卡片 ── */
+        .video-card {
+            margin: 32px 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-card img {
+            width: 100%;
+            display: block;
+        }
+
+        .video-caption {
+            padding: 12px 16px;
+            font-size: 0.88em;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .video-caption a {
+            color: var(--accent);
+        }
+
+        .video-card.fallback {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* ── Lightbox：截图点击放大 ── */
+        .screenshot-card img { cursor: zoom-in; transition: opacity 0.15s; }
+        .screenshot-card img:hover { opacity: 0.9; }
+        .lightbox {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(5, 5, 8, 0.92); backdrop-filter: blur(4px);
+            cursor: zoom-out; padding: 24px;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: 96vw; max-height: 90vh;
+            border-radius: 8px; box-shadow: 0 12px 60px rgba(0,0,0,0.7);
+        }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 0; right: 0;
+            text-align: center; color: var(--text-secondary); font-size: 0.85em;
+        }
+
+        /* ── 顶部信息栏 ── */
+        .book-content > blockquote:first-of-type {
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+            border-radius: var(--radius);
+            margin-bottom: 32px;
+        }
+
+        /* ── 图表居中 ── */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── 响应式 ── */
+        @media (max-width: 640px) {
+            .book-content { padding: 32px 16px 80px; }
+            h1 { font-size: 1.7em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <article class="book-content">
+        <h1 id="20-python-52">第 20 讲：Python 安装和环境设置（5.2）</h1>
+<p>在前面的章节中，我们完成了基于 Next.js 的全栈前端项目开发，并通过两种不同方式完成了自动化部署。从本节开始，我们的全栈探索之旅将正式跨入<strong>后端开发</strong>领域。</p>
+<p>后端编程的第一步，正如前端开发需要预先安装 Node.js 运行时一样，是必须在操作系统中构建稳健、隔离、可复现的 <strong>Python 运行时与依赖管理环境</strong>。本节将深入剖析 Python 多版本共存原理、虚拟环境 <code>venv</code> 的底层隔离机制、与科学计算工具 Conda 的差异定位，并在我们的 <code>zero-to-tech</code> 项目中开辟 <code>backend/</code> 独立工程，完成第一个 Python 程序与第三方网络请求库的集成。</p>
+<pre class="highlight"><code class="language-mermaid">flowchart TD
+    subgraph Frontend [&quot;前端架构 (已完成)&quot;]
+        Browser[&quot;浏览器 / 客户端&quot;]
+        NextJS[&quot;Next.js / React&quot;]
+        NodeEnv[&quot;Node.js 运行时 + npm&quot;]
+    end
+
+    subgraph Backend [&quot;后端架构 (本章起步)&quot;]
+        PythonEnv[&quot;Python 运行时 (3.x)&quot;]
+        VenvIsolation[&quot;.venv 独立虚拟环境&quot;]
+        PipManager[&quot;pip 包管理 + requirements.txt&quot;]
+        ApiServices[&quot;FastAPI / HTTP API 接口&quot;]
+    end
+
+    Browser &lt;--&gt;|HTTP / JSON 通信| ApiServices
+    NextJS -.-&gt;|前后端解耦部署| Backend
+    PythonEnv --&gt; VenvIsolation
+    VenvIsolation --&gt; PipManager
+    PipManager --&gt; ApiServices
+</code></pre>
+
+<hr />
+<h2 id="1-python">1. 从前端到后端：为什么需要 Python 运行环境？</h2>
+<p><em>(参考时间: 01:10)</em></p>
+<p>在前端开发阶段，浏览器无法直接执行 TypeScript 或理解 Vite/Next.js 的打包指令，我们必须依赖 <strong>Node.js</strong> 作为宿主运行环境；同理，后端业务逻辑使用 Python 编写，服务器与本地操作系统必须安装 <strong>Python 解释器</strong>（Python Interpreter），负责将代码逐行解析执行。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_00_45.png" alt="本节学习路线与核心大纲" loading="lazy">
+  <p class="video-caption">📷 本节学习路线与核心大纲<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=45" target="_blank" rel="noopener">在 B 站中打开 (00:00:45)</a></p>
+</div>
+
+<h3 id="_1">检查系统现存版本</h3>
+<p>在盲目下载安装器之前，应当首先在终端中探测当前系统是否已预装 Python：</p>
+<ul>
+<li><strong>macOS / Linux 系统</strong>：
+  <code>bash
+  python3 --version</code></li>
+<li><strong>Windows 系统</strong>：
+  <code>cmd
+  python --version
+  # 或通过 py 启动器
+  py --version</code></li>
+</ul>
+<p>终端的返回通常有以下三种典型情况：
+1. <strong>输出 <code>Python 3.x.x</code></strong>：系统已就绪现代化 Python 环境。如果当前已有日常使用的版本且无破坏性需求，可直接使用；若版本较为陈旧，推荐安装最新稳定版。
+2. <strong>输出 <code>command not found</code> 或提示无法识别命令</strong>：系统未配置环境变量或未安装 Python，需要进行全新安装。
+3. <strong>输出 <code>Python 2.7.x</code></strong>：必须引起高度警惕。Python 官方早在 2020 年已正式终止对 Python 2 的所有维护，全栈现代后端项目严禁使用 Python 2。</p>
+<h3 id="_2">官方安装流程</h3>
+<p>访问 Python 官方网站下载页面，官网会自动识别当前访问操作系统并推荐适配安装包：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_03_02.png" alt="Python 官方网站下载首页" loading="lazy">
+  <p class="video-caption">📷 Python 官方网站下载首页<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=182" target="_blank" rel="noopener">在 B 站中打开 (00:03:02)</a></p>
+</div>
+
+<ul>
+<li><strong>macOS 用户</strong>：下载 <code>.pkg</code> 离线安装包，按照引导一路点击“继续”并同意许可协议完成安装。</li>
+<li><strong>Windows 用户</strong>：下载 <code>.exe</code> 安装程序。<strong>极其关键的一步</strong>：在安装首屏务必勾选底部 <strong><code>Add python.exe to PATH</code></strong>（将 Python 添加至系统环境变量），否则在终端直接输入 <code>python</code> 将无法定位执行程序。</li>
+</ul>
+<blockquote>
+<p>[!IMPORTANT]
+安装完成后，必须<strong>完全关闭并重新打开终端窗口</strong>，以使全新的系统 PATH 环境变量生效。</p>
+</blockquote>
+<hr />
+<h2 id="2-python">2. Python 版本历史与多版本共存管理</h2>
+<p><em>(参考时间: 04:35)</em></p>
+<p>许多初学者常常困惑：为什么在 macOS 或 Linux 上往往要敲 <code>python3</code>，而在 Windows 或部分环境敲 <code>python</code> 也可以？这背后有一段软件工程演进的阵痛史。</p>
+<pre class="highlight"><code class="language-mermaid">timeline
+    title Python 历史与解释器命令演进
+    1991 : Python 语言诞生
+    2000 : Python 2.0 发布 (奠定生态基石)
+    2008 : Python 3.0 发布 (彻底切断向后兼容性)
+    2008-2020 : 割裂过渡期 (Linux/macOS 约定: python 对应 2.x, python3 对应 3.x)
+    2020 : Python 2 正式退役 EOL
+    现代生态 : 新系统/Windows 逐渐将 python 指令默认指向 Python 3
+</code></pre>
+
+<ol>
+<li><strong>Python 2 与 3 的不兼容大版本裂变</strong>：2008 年发布的 Python 3 修复了早期语言设计层面的大量历史包袱（如 Unicode 字符串处理、print 作为函数等），但彻底不兼容 Python 2。为了保证操作系统内置脚本不崩溃，Linux 与 macOS 形成硬性约定：<code>python</code> 专用于 Python 2，而 <code>python3</code> 指向新版。</li>
+<li><strong>现代系统的回归</strong>：随着 Python 2 全面退役，现代 Windows 官方安装器与部分前沿 Linux 发行版已将 <code>python</code> 直接重定向至 Python 3。</li>
+</ol>
+<h3 id="_3">精准定位当前的解释器路径</h3>
+<p>当单台计算机因各类软件安装了多个 Python 解释器时，敲下命令究竟由哪个二进制程序接管？我们可以通过路径追踪命令排查：</p>
+<ul>
+<li><strong>macOS / Linux</strong>：
+  <code>bash
+  which python3
+  # 列出所有在 PATH 中的候选可执行程序（排在最前的为当前生效者）
+  which -a python3</code></li>
+<li><strong>Windows CMD</strong>：
+  <code>cmd
+  where python</code></li>
+<li><strong>Windows PowerShell</strong>：
+  <code>powershell
+  Get-Command python</code></li>
+</ul>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_08_50.png" alt="使用 which -a 命令排查系统中并存的 Python 路径" loading="lazy">
+  <p class="video-caption">📷 使用 which -a 命令排查系统中并存的 Python 路径<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=530" target="_blank" rel="noopener">在 B 站中打开 (00:08:50)</a></p>
+</div>
+
+<p>如果需要强制使用特定版本的解释器执行脚本，无需修改全局环境变量，直接使用完整二进制路径或精确版本号调用即可：</p>
+<pre class="highlight"><code class="language-bash"># 直接指定绝对路径执行
+/Library/Frameworks/Python.framework/Versions/3.13/bin/python3 script.py
+
+# 或是带小版本号的命令调用
+python3.13 script.py
+</code></pre>
+
+<hr />
+<h2 id="3">3. 全局安装的困境：为什么必须使用虚拟环境？</h2>
+<p><em>(参考时间: 11:20)</em></p>
+<p>在前端工程中，所有依赖默认下载到项目根目录下的 <code>node_modules/</code> 中，实现了工程间的物理隔离。然而，Python 官方包管理工具 <code>pip</code> 默认的行为是将所有第三方库安装到 <strong>Python 解释器自身的系统级或全局目录</strong>（如 <code>/site-packages/</code>）。</p>
+<p>这种“全局共享”模式在多项目开发时会引发严重的<strong>依赖冲突（Dependency Hell）</strong>：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_10_05.png" alt="多项目依赖相同包的不同版本引发全局覆盖冲突" loading="lazy">
+  <p class="video-caption">📷 多项目依赖相同包的不同版本引发全局覆盖冲突<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=605" target="_blank" rel="noopener">在 B 站中打开 (00:10:05)</a></p>
+</div>
+
+<pre class="highlight"><code class="language-mermaid">graph TD
+    subgraph GlobalTrouble [&quot;未隔离模式（全局污染与版本冲突）&quot;]
+        GlobalPython[&quot;全局 Python /site-packages&quot;]
+        ProjA[&quot;Project A&lt;br/&gt;需要 Pandas 1.5&quot;] --&gt;|覆盖升级| GlobalPython
+        ProjB[&quot;Project B&lt;br/&gt;需要 Pandas 2.2&quot;] --&gt;|版本冲突报错!| GlobalPython
+    end
+
+    subgraph VenvIsolationMode [&quot;虚拟环境隔离模式（最佳实践）&quot;]
+        VenvA[&quot;Project A/.venv&lt;br/&gt;Pandas 1.5&quot;]
+        VenvB[&quot;Project B/.venv&lt;br/&gt;Pandas 2.2&quot;]
+        ProjA_ISO[&quot;Project A 代码&quot;] --&gt; VenvA
+        ProjB_ISO[&quot;Project B 代码&quot;] --&gt; VenvB
+    end
+</code></pre>
+
+<p>如上图所示，当 Project A 依赖 <code>pandas 1.5</code>，而 Project B 依赖 <code>pandas 2.2</code> 时，全局安装会导致后安装的版本强制覆盖前者，导致依赖旧接口的项目直接运行崩溃。</p>
+<p>解决方案与前端哲学一致：<strong>依赖必须跟随项目走</strong>。Python 官方自 3.3 起内置了轻量级虚拟环境工具 <strong><code>venv</code></strong>。</p>
+<hr />
+<h2 id="4-venv">4. <code>venv</code> 核心机制：创建、激活与退出</h2>
+<p><em>(参考时间: 14:05)</em></p>
+<p><code>venv</code> 会在项目根目录下创建一个专属沙箱文件夹（通常命名为 <code>.venv</code>），内部包含该项目专用的 Python 二进制替身（符号链接或副本）及独立的依赖存放目录。</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_14_00.png" alt="虚拟环境 venv 在项目根目录下的隔离结构" loading="lazy">
+  <p class="video-caption">📷 虚拟环境 venv 在项目根目录下的隔离结构<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=840" target="_blank" rel="noopener">在 B 站中打开 (00:14:00)</a></p>
+</div>
+
+<h3 id="_4">虚拟环境核心三板斧</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">操作阶段</th>
+<th style="text-align: left;">命令语法 (macOS / Linux)</th>
+<th style="text-align: left;">命令语法 (Windows PowerShell)</th>
+<th style="text-align: left;">核心原理解析</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>1. 创建环境</strong></td>
+<td style="text-align: left;"><code>python3 -m venv .venv</code></td>
+<td style="text-align: left;"><code>python -m venv .venv</code></td>
+<td style="text-align: left;">依据当前运行的 Python 解释器在当前目录构建沙箱骨架</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>2. 激活环境</strong></td>
+<td style="text-align: left;"><code>source .venv/bin/activate</code></td>
+<td style="text-align: left;"><code>.venv\Scripts\Activate.ps1</code></td>
+<td style="text-align: left;">修改当前终端进程的 <code>$PATH</code> 变量，将沙箱 bin 置于最前</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>3. 退出环境</strong></td>
+<td style="text-align: left;"><code>deactivate</code></td>
+<td style="text-align: left;"><code>deactivate</code></td>
+<td style="text-align: left;">还原终端进程的环境变量设置，退出沙箱</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>[!NOTE]
+创建命令中 <code>python3 -m venv</code> 的含义是：调用 Python 解释器的 <code>-m</code>（module）参数将内置模块 <code>venv</code> 作为脚本运行。所创建虚拟环境的 Python 小版本完全取决于执行该命令时的宿主 Python 版本。</p>
+</blockquote>
+<h3 id="_5">终端指示符与激活验证</h3>
+<p>执行激活命令后，终端提示符最前方会出现括号标记 <code>(.venv)</code>，这表明虚拟环境已完全接管当前终端会话：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_19_10.png" alt="激活虚拟环境后终端行首出现 .venv 标识" loading="lazy">
+  <p class="video-caption">📷 激活虚拟环境后终端行首出现 .venv 标识<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=1150" target="_blank" rel="noopener">在 B 站中打开 (00:19:10)</a></p>
+</div>
+
+<p>在激活状态下：
+* 无论是执行 <code>python</code> 还是 <code>python3</code>，都会毫无歧义地指向 <code>.venv</code> 内部的解释器；
+* 执行 <code>pip install</code> 安装的所有第三方模块均会被锁在 <code>.venv</code> 内，绝对不会污染外部系统。</p>
+<h3 id="-prompt">自定义环境提示符（--prompt）</h3>
+<p>如果开发机上存在多个处于激活状态的项目，默认的 <code>(.venv)</code> 提示符无法一眼分辨当前所在工程。<code>venv</code> 提供了 <code>--prompt</code> 参数支持定制环境名：</p>
+<pre class="highlight"><code class="language-bash">python3 -m venv --prompt ProjectB .venv
+source .venv/bin/activate
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_23_45.png" alt="使用 --prompt 自定义提示符名称 ProjectB" loading="lazy">
+  <p class="video-caption">📷 使用 --prompt 自定义提示符名称 ProjectB<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=1425" target="_blank" rel="noopener">在 B 站中打开 (00:23:45)</a></p>
+</div>
+
+<p>此时命令行行首会明确展示 <code>(ProjectB)</code>，而项目内的隔离文件夹依然保持规范的 <code>.venv</code> 名称。</p>
+<hr />
+<h2 id="5-conda-venv">5. Conda 用户避坑：与 venv 的选型决策</h2>
+<p><em>(参考时间: 24:10)</em></p>
+<p>很多从事人工智能、数据分析的同学电脑中已经预装了 Anaconda 或 Miniconda。打开终端时，行首默认会带有一个 <code>(base)</code> 前缀。</p>
+<pre class="highlight"><code class="language-mermaid">graph LR
+    subgraph CondaMode [&quot;Conda 集中化管理模式&quot;]
+        CondaCore[&quot;Conda 全局安装器&quot;]
+        EnvBase[&quot;~/.conda/envs/base&quot;]
+        EnvPy39[&quot;~/.conda/envs/py39&quot;]
+        EnvPy312[&quot;~/.conda/envs/py312&quot;]
+        CondaCore --&gt; EnvBase
+        CondaCore --&gt; EnvPy39
+        CondaCore --&gt; EnvPy312
+        ProjX[&quot;本地项目代码&quot;] -.-&gt;|人脑记录或指令挂接| EnvPy312
+    end
+
+    subgraph VenvMode [&quot;venv 原生项目内嵌模式 (Vibe Coding 首选)&quot;]
+        ProjRoot[&quot;项目工程根目录&quot;]
+        SrcCode[&quot;src / 业务代码&quot;]
+        LocalVenv[&quot;.venv 专属环境目录&quot;]
+        ReqTxt[&quot;requirements.txt&quot;]
+        ProjRoot --&gt; SrcCode
+        ProjRoot --&gt; LocalVenv
+        ProjRoot --&gt; ReqTxt
+    end
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_25_10.png" alt="Conda 集中管理机制与全局 base 终端状态" loading="lazy">
+  <p class="video-caption">📷 Conda 集中管理机制与全局 base 终端状态<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=1510" target="_blank" rel="noopener">在 B 站中打开 (00:25:10)</a></p>
+</div>
+
+<h3 id="ai-vibe-coding-venv">为什么在现代全栈与 AI 协作（Vibe Coding）时代推荐 venv？</h3>
+<ol>
+<li><strong>信息自内聚</strong>：<code>venv</code> 的环境与配置直接内嵌在工程目录下。IDE（如 VS Code、Cursor）以及智能编程 Agent 一旦打开项目目录，能瞬间识别环境版本与依赖，无需人工跨目录绑定。</li>
+<li><strong>严禁环境叠加</strong>：切忌在已激活的 Conda <code>(base)</code> 环境中再次运行 <code>source .venv/bin/activate</code>，多重虚拟环境路径互相嵌套会引发动态链接库调用紊乱。</li>
+<li><strong>关闭 Conda 自动激活</strong>：
+   如果希望跟着全栈课程采用原生 <code>venv</code> 标准，推荐禁用 Conda 打开终端时的自动接管：
+   <code>bash
+   conda config --set auto_activate_base false</code>
+   关闭后重启终端，行首的 <code>(base)</code> 标识彻底消失，系统恢复干净清爽的环境。</li>
+</ol>
+<hr />
+<h2 id="6-zero-to-tech">6. 工程化实践：为 zero-to-tech 接入后端模块</h2>
+<p><em>(参考时间: 30:00)</em></p>
+<p>现在，我们将这些理论正式落地到从第 1 讲一路陪伴我们的全栈项目 <code>zero-to-tech</code> 中。</p>
+<h3 id="_6">目录结构规划与职责边界</h3>
+<p>在 <code>zero-to-tech</code> 项目根目录下，新建 <code>backend/</code> 目录用于承载后端代码体系：</p>
+<pre class="highlight"><code>zero-to-tech/
+├── app/                  # Next.js 前端路由与页面
+├── public/               # 前端静态资产
+├── out/                  # 前端静态导出产物
+├── package.json          # Node.js 依赖描述文件
+└── backend/              # 👈 全新开辟的独立后端工程
+    └── .venv/            # 👈 后端独立隔离的 Python 虚拟环境
+</code></pre>
+
+<blockquote>
+<p>[!NOTE]
+有同学会问：是否需要顺便将原本根目录的前端代码也挪入 <code>frontend/</code> 文件夹做“对称”？
+<strong>完全没有必要。</strong> 真实企业级演进项目中切忌无意义的过度重构。前端目录此前已与 Nginx 配置、Git 历史深度绑定；前后端解耦的核心本质在于<strong>独立的运行时进程、独立的依赖管理、独立的部署流</strong>，绝不在于文件夹名称的对称。</p>
+</blockquote>
+<h3 id="_7">初始化后端专用虚拟环境</h3>
+<p>进入 <code>backend</code> 目录，创建提示符为 <code>zero-to-tech</code> 的专属沙箱并激活：</p>
+<pre class="highlight"><code class="language-bash">cd backend
+python3 -m venv --prompt zero-to-tech .venv
+source .venv/bin/activate
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_32_30.png" alt="在 backend 目录下创建并激活 zero-to-tech 虚拟环境" loading="lazy">
+  <p class="video-caption">📷 在 backend 目录下创建并激活 zero-to-tech 虚拟环境<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=1950" target="_blank" rel="noopener">在 B 站中打开 (00:32:30)</a></p>
+</div>
+
+<h3 id="vs-code">VS Code 智能集成与终端自动激活</h3>
+<p>在 VS Code 扩展市场安装官方 <strong>Python</strong>（含 Python Environment Manager）插件。该插件会自动扫描工程根目录与子目录下的 <code>.venv</code> 解释器。</p>
+<p>安装完成后，在 VS Code 内部新建终端并切换到 <code>backend/</code> 时，插件会自动注入环境变量激活命令，无需每次手动敲击 <code>source</code> 指令：</p>
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_34_20.png" alt="VS Code 终端自动识别 .venv 并自动激活虚拟环境" loading="lazy">
+  <p class="video-caption">📷 VS Code 终端自动识别 .venv 并自动激活虚拟环境<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=2060" target="_blank" rel="noopener">在 B 站中打开 (00:34:20)</a></p>
+</div>
+
+<h3 id="git">必须配置的 Git 忽略项</h3>
+<p>正如前端的 <code>node_modules</code> 绝不可提交至版本库一样，<code>.venv</code> 包含海量机器本地特定的二进制与动态链接文件，绝不能污染代码仓库。</p>
+<p>在项目根目录的 <code>.gitignore</code> 中追加一行：</p>
+<pre class="highlight"><code class="language-gitignore"># 忽略后端 Python 虚拟环境
+backend/.venv/
+.venv/
+</code></pre>
+
+<hr />
+<h2 id="7-python">7. 运行第一个 Python 程序：初识语法特色</h2>
+<p><em>(参考时间: 35:50)</em></p>
+<p>在 <code>backend/</code> 目录下创建第一个 Python 脚本 <code>first_json.py</code>：</p>
+<pre class="highlight"><code class="language-python">import json
+
+site_name = &quot;zero-to-tech&quot;
+
+def make_data():
+    data = {&quot;message&quot;: &quot;hello, world&quot;, &quot;from&quot;: site_name}
+    return json.dumps(data)
+
+print(make_data())
+</code></pre>
+
+<p>在激活的虚拟环境中直接运行：</p>
+<pre class="highlight"><code class="language-bash">python first_json.py
+</code></pre>
+
+<p>终端将打印出序列化后的 JSON 字符串：</p>
+<pre class="highlight"><code class="language-json">{&quot;message&quot;: &quot;hello, world&quot;, &quot;from&quot;: &quot;zero-to-tech&quot;}
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_37_45.png" alt="first_json.py 成功运行并输出 JSON 字符串" loading="lazy">
+  <p class="video-caption">📷 first_json.py 成功运行并输出 JSON 字符串<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=2265" target="_blank" rel="noopener">在 B 站中打开 (00:37:45)</a></p>
+</div>
+
+<h3 id="python">Python 语法初印象与核心特征</h3>
+<ol>
+<li><strong>内置标准库（Standard Library）</strong>：<code>import json</code> 调用的 JSON 模块由 Python 官方直接预装自带，无需网络下载，开箱即用。</li>
+<li><strong>直观的变量赋值</strong>：无需前端的 <code>let / const / var</code> 声明关键字，直接使用 <code>变量名 = 值</code> 即可。</li>
+<li><strong>冒号与强制缩进（Indentation）</strong>：Python 抛弃了 C/Java/JavaScript 传统的大括号 <code>{}</code> 作用域语法，使用<strong>冒号 <code>:</code> + 4 个空格对齐</strong>界定代码块范围。缩进即语法，缩进不规范代码会直接引发 <code>IndentationError</code>。</li>
+<li><strong>简洁的终端输出</strong>：直接通过内置函数 <code>print()</code> 打印内容至标准输出流。无需编译、打包或浏览器渲染，即写即跑。</li>
+</ol>
+<hr />
+<h2 id="8-pip-requirementstxt">8. 包管理与依赖固化：pip 与 requirements.txt</h2>
+<p><em>(参考时间: 40:20)</em></p>
+<p>接下来我们尝试使用 Python 编写网络请求逻辑。新建 <code>api_demo.py</code>：</p>
+<pre class="highlight"><code class="language-python">import requests
+
+resp = requests.get(&quot;https://api.ipify.org?format=json&quot;)
+print(resp.json())
+</code></pre>
+
+<p>保存后直接执行：</p>
+<pre class="highlight"><code class="language-bash">python api_demo.py
+</code></pre>
+
+<p>此时终端抛出经典错误：</p>
+<pre class="highlight"><code class="language-text">ModuleNotFoundError: No module named 'requests'
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_41_58.png" alt="运行缺少依赖的脚本触发 ModuleNotFoundError 报错" loading="lazy">
+  <p class="video-caption">📷 运行缺少依赖的脚本触发 ModuleNotFoundError 报错<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=2518" target="_blank" rel="noopener">在 B 站中打开 (00:41:58)</a></p>
+</div>
+
+<h3 id="pip">用 pip 安装第三方库</h3>
+<p>报错信息清晰明了：Python 标准库中并不包含 <code>requests</code> 模块。它属于开源社区最著名的 HTTP 客户端第三方库，类似于前端生态中的 <code>axios</code>。</p>
+<p>使用 Python 官方包管理器 <code>pip</code>（随 Python 一起安装）下载安装：</p>
+<pre class="highlight"><code class="language-bash">pip install requests
+</code></pre>
+
+<p><code>pip</code> 会解析依赖树，将 <code>requests</code> 及其底层的 <code>urllib3</code>、<code>certifi</code>、<code>idna</code>、<code>charset-normalizer</code> 依赖链完整拉取至本地。</p>
+<h3 id="_8">检查依赖落盘路径</h3>
+<p>使用 <code>pip show</code> 查看安装详情：</p>
+<pre class="highlight"><code class="language-bash">pip show requests
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_43_30.png" alt="pip show 验证依赖库真实安装于 backend/.venv 沙箱目录中" loading="lazy">
+  <p class="video-caption">📷 pip show 验证依赖库真实安装于 backend/.venv 沙箱目录中<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=2610" target="_blank" rel="noopener">在 B 站中打开 (00:43:30)</a></p>
+</div>
+
+<p>从输出的 <code>Location: /.../zero-to-tech/backend/.venv/lib/python3.x/site-packages</code> 可以清楚看到，依赖库精准存放在当前项目的 <code>.venv</code> 内部，完全隔离于操作系统全局环境。</p>
+<p>再次运行程序，成功在终端打印外网 IP 数据：</p>
+<pre class="highlight"><code class="language-bash">python api_demo.py
+# 输出: {'ip': '209.141.46.182'}
+</code></pre>
+
+<div class="video-card screenshot-card">
+  <img src="images/shot_00_45_25.png" alt="api_demo.py 运行成功，打印出 API 响应内容" loading="lazy">
+  <p class="video-caption">📷 api_demo.py 运行成功，打印出 API 响应内容<br><a href="https://www.bilibili.com/video/BV1M5Nu6pEuK?t=2725" target="_blank" rel="noopener">在 B 站中打开 (00:45:25)</a></p>
+</div>
+
+<h3 id="requirementstxt">依赖版本固化：<code>requirements.txt</code></h3>
+<p>既然 <code>.venv</code> 目录被 Git 忽略，团队其他成员拉取代码或后续部署到云端 Linux 服务器时，如何还原完全一致的 Python 依赖生态？</p>
+<p>前端使用 <code>package.json</code> 记录包信息，而 Python 生态的标准规范是 <strong><code>requirements.txt</code></strong>：</p>
+<pre class="highlight"><code class="language-mermaid">flowchart LR
+    subgraph DevEnv [&quot;本地开发环境 (backend/.venv)&quot;]
+        PipEnv[&quot;已安装 requests, urllib3 等&quot;]
+        PipFreeze[&quot;pip freeze &gt; requirements.txt&quot;]
+        PipEnv --&gt; PipFreeze
+    end
+
+    subgraph GitRepo [&quot;Git 代码版本库&quot;]
+        ReqFile[&quot;requirements.txt (被版本控制跟踪)&quot;]
+        PipFreeze --&gt;|git push| ReqFile
+    end
+
+    subgraph ServerEnv [&quot;生产 Linux 服务器 / 团队新成员&quot;]
+        ServerPip[&quot;pip install -r requirements.txt&quot;]
+        ReqFile --&gt;|git clone| ServerPip
+        ServerPip --&gt; BuildNewEnv[&quot;.venv 100% 还原一模一样依赖环境&quot;]
+    end
+</code></pre>
+
+<p>在激活的虚拟环境中，将当前安装的所有库及其精确版本号导出：</p>
+<pre class="highlight"><code class="language-bash">pip freeze &gt; requirements.txt
+</code></pre>
+
+<p>生成的 <code>requirements.txt</code> 包含了精确版本锚定（Pinned Version）：</p>
+<pre class="highlight"><code class="language-text">certifi==2024.12.14
+charset-normalizer==3.4.1
+idna==3.10
+requests==2.32.3
+urllib3==2.3.0
+</code></pre>
+
+<p>任何人拿到该工程后，只需进入虚拟环境执行一条命令，即可全自动无缝补齐所有依赖：</p>
+<pre class="highlight"><code class="language-bash">pip install -r requirements.txt
+</code></pre>
+
+<blockquote>
+<p>[!IMPORTANT]
+<code>requirements.txt</code> 是项目源代码不可分割的一部分，<strong>必须提交至 Git 仓库</strong>。</p>
+</blockquote>
+<hr />
+<h2 id="9">9. 新手避坑与本节小结</h2>
+<p><em>(参考时间: 48:20)</em></p>
+<h3 id="_9">避坑：系统桌面应用图标的迷惑</h3>
+<p>在 macOS 系统完成 Python 官方包安装后，“启动台（Launchpad）”中往往会出现形如 <code>IDLE</code>、<code>Python Launcher</code> 或带有版本号的图形应用程序图标。很多新手点击后发现界面毫无响应或弹出一个极简控制台，误以为安装失败。</p>
+<p><strong>解惑</strong>：这些属于 Python 早期的历史遗留小工具。现代化全栈 Python 开发<strong>完全基于命令行终端与专业 IDE（如 VS Code）</strong>，请勿理会启动台中的图形图标，保持终端调用即可。</p>
+<h3 id="_10">核心知识图谱速查</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">概念维度</th>
+<th style="text-align: left;">核心概念</th>
+<th style="text-align: left;">关键指令 / 文件</th>
+<th style="text-align: left;">全栈对比映射</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>运行时</strong></td>
+<td style="text-align: left;">Python 3 解释器</td>
+<td style="text-align: left;"><code>python3 --version</code>, <code>which python3</code></td>
+<td style="text-align: left;">Node.js (<code>node -v</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>隔离沙箱</strong></td>
+<td style="text-align: left;">venv 虚拟环境</td>
+<td style="text-align: left;"><code>python3 -m venv .venv</code>, <code>source .venv/bin/activate</code></td>
+<td style="text-align: left;"><code>node_modules</code> 独立隔离机制</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>包管理工具</strong></td>
+<td style="text-align: left;">pip</td>
+<td style="text-align: left;"><code>pip install &lt;package&gt;</code>, <code>pip show &lt;package&gt;</code></td>
+<td style="text-align: left;"><code>npm</code> / <code>pnpm</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>依赖清单</strong></td>
+<td style="text-align: left;">版本锁定配置</td>
+<td style="text-align: left;"><code>pip freeze &gt; requirements.txt</code>, <code>pip install -r requirements.txt</code></td>
+<td style="text-align: left;"><code>package.json</code> + <code>package-lock.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>至此，我们的 <code>zero-to-tech</code> 项目已成功开辟独立的后端开发领地，完成了语言运行时安装、虚拟环境沙箱构建、VS Code 自动化终端集成与依赖固化管理。在下一节中，我们将手搓一个 HTTP API 服务，从协议底层彻底解密浏览器与后端服务器之间的数据交互对话。</p>
+    </article>
+
+    <!-- Mermaid 图表引擎初始化 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+            
+            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            const codeNodes = document.querySelectorAll('pre code, .highlight code');
+            codeNodes.forEach(function(node) {
+                const text = node.textContent.trim();
+                // 匹配常见的 mermaid 图表前缀
+                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'mermaid';
+                    tempDiv.textContent = text;
+                    
+                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
+                    const wrapper = node.closest('.highlight') || node.parentNode;
+                    wrapper.replaceWith(tempDiv); 
+                }
+            });
+            
+            // 所有节点转换完成，统一进行图表动态绘制
+            mermaid.run();
+        });
+    </script>
+    <!-- Lightbox：截图点击放大 -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = '<img alt=""><div class="lightbox-caption"></div>';
+            document.body.appendChild(lightbox);
+            const lbImg = lightbox.querySelector('img');
+            const lbCap = lightbox.querySelector('.lightbox-caption');
+            function openLightbox(src, alt) {
+                lbImg.src = src; lbImg.alt = alt || '';
+                lbCap.textContent = alt || '';
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                lbImg.src = '';
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.screenshot-card img').forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src, img.alt); });
+            });
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+        });
+    </script>
+</body>
+</html>
