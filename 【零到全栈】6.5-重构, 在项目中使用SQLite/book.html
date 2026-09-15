@@ -272,6 +272,10 @@
             justify-content: center;
             margin: 32px 0;
             overflow-x: auto;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: inherit;
         }
 
         /* ── 滚动条 ── */
@@ -312,13 +316,14 @@
 <h2 id="mainpy">一、审视现有架构：<code>main.py</code> 的职责混杂痛点</h2>
 <p><em>(参考时间: 00:00 - 03:00)</em></p>
 <p>打开我们当前的 <code>backend/main.py</code>，虽然文件仅有几十行代码，但仔细梳理会发现它同时承担了三种完全不同的系统职责：</p>
-<pre class="highlight"><code class="language-mermaid">graph TD
+<pre class="mermaid">
+graph TD
     subgraph 单一文件 main.py 内混杂的三种职责
         R1[&quot;接口层 (Presentation/API Layer)&lt;br/&gt;• @app.get('/api/history')&lt;br/&gt;• @app.post('/api/analyze')&lt;br/&gt;• 负责 HTTP 协议解析与状态码响应&quot;]
         R2[&quot;业务层 (Business/Domain Layer)&lt;br/&gt;• SnowNLP 情感倾向打分&lt;br/&gt;• pypinyin 多音字与拼音生成&lt;br/&gt;• 组装业务分析报告字典&quot;]
         R3[&quot;存储层 (Persistence/Storage Layer)&lt;br/&gt;• history.json 磁盘路径常量&lt;br/&gt;• json.load() 全量读取与解析&lt;br/&gt;• records[::-1][:10] 内存倒序切片&lt;br/&gt;• json.dump() 全量落盘覆写&quot;]
     end
-</code></pre>
+</pre>
 
 <p>在功能原型阶段，几行读写文件的逻辑顺手写在路由函数内尚可接受。但当我们需要将存储底层从 JSON 替换为 SQLite 时，这种耦合就会引发灾难：<strong>我们本只想改动数据的持久化方式，却不得不深入修改接口层路由函数内部的代码</strong>。</p>
 <p>如果在接口函数内直接混入 SQL 语句或数据库连接游标，未来当存储介质需要从 SQLite 升级为分布式 PostgreSQL 时，所有的业务与接口代码都将被迫再次遭受牵连。因此，在正式切换数据库之前，必须先对代码结构进行解耦。</p>
@@ -345,12 +350,13 @@
 <p>我们将拆分出的存储层模块命名为 <code>storage.py</code>，而不是 <code>sqlite.py</code> 或 <code>db.py</code>。
 - <strong>依据职责命名，而非依据实现命名</strong>：这一层的核心职责是“提供存储能力（Storage）”，其实现介质今天可以是本地 JSON，明天可以是 SQLite，未来还可以是云端 PostgreSQL。
 - <strong>调用方接口稳定</strong>：外部接口始终调用 <code>save_record()</code> 与 <code>get_history()</code>，无论底层物理介质如何翻天覆地，上层消费方无需感知任何名称变更。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
     A[上层业务与接口: main.py] --&gt;|语义化调用| B[&quot;统一存储契约: storage.py&lt;br/&gt;save_record() / get_history()&quot;]
     B -.-&gt;|阶段一| C[底层实现 A: JSON 文件]
     B -.-&gt;|阶段二| D[底层实现 B: SQLite 数据库]
     B -.-&gt;|未来扩展| E[底层实现 C: PostgreSQL / 云存储]
-</code></pre>
+</pre>
 
 <div class="video-card screenshot-card">
   <img src="images/shot_00_06_30.png" alt="存储层模块设计与职责命名逻辑" loading="lazy">
@@ -486,7 +492,8 @@ def read_history():
 <h2 id="storagepy-sqlite">五、第二阶段（装修）：<code>storage.py</code> 全面接入 SQLite</h2>
 <p><em>(参考时间: 22:30 - 31:30)</em></p>
 <p>架构边界清晰后，我们正式执行第二阶段“装修”，在保持对外函数签名不变的前提下，将 <code>backend/storage.py</code> 的底层驱动完整切换为 SQLite。</p>
-<pre class="highlight"><code class="language-mermaid">classDiagram
+<pre class="mermaid">
+classDiagram
     class StorageModule {
         +DB_FILE : Path
         +get_conn() Connection
@@ -495,7 +502,7 @@ def read_history():
         +get_history(limit: int) list
     }
     note for StorageModule &quot;对外公开契约保持稳定&lt;br/&gt;内部逻辑全量换血为 SQL 驱动&quot;
-</code></pre>
+</pre>
 
 <p>六处关键改造规划如下：
 1. <strong>替换驱动库</strong>：移除 <code>json</code>，引入标准库 <code>sqlite3</code>。
@@ -671,20 +678,21 @@ backend/*.sqlite3
 <h2 id="orm">八、架构拓展视野：ORM（对象关系映射）核心机理</h2>
 <p><em>(参考时间: 37:25 - 39:50)</em></p>
 <p>在大型现代后端项目中，很多团队并不推荐在 Python 逻辑中手写原生 SQL 字符串，而是广泛使用 <strong>ORM（Object-Relational Mapping，对象关系映射）</strong> 框架（如 FastAPI 官方力推的 <code>SQLModel</code>，以及 <code>SQLAlchemy</code>、Django ORM 等）。</p>
-<pre class="highlight"><code class="language-mermaid">flowchart LR
-    subgraph 开发者编写的面向对象代码
+<pre class="mermaid">
+flowchart LR
+    subgraph DevCode[&quot;开发者编写的面向对象代码&quot;]
         A[&quot;class History(SQLModel, table=True):&lt;br/&gt;    id: int | None = Field(default=None, primary_key=True)&lt;br/&gt;    text: str&lt;br/&gt;    score: float&quot;]
     end
-    subgraph ORM 框架层 (SQLModel / SQLAlchemy)
-        B[对象关系映射引擎]
+    subgraph ORMLayer[&quot;ORM 框架层 (SQLModel / SQLAlchemy)&quot;]
+        B[&quot;对象关系映射引擎&quot;]
         B --&gt;|自动编译转换| C[&quot;SQL 语句生成器:&lt;br/&gt;INSERT INTO history ...&lt;br/&gt;SELECT * FROM history WHERE ...&quot;]
     end
-    subgraph 底层数据库内核
-        D[(SQLite / PostgreSQL 存储引擎)]
+    subgraph DBLayer[&quot;底层数据库内核&quot;]
+        D[(&quot;SQLite / PostgreSQL 存储引擎&quot;)]
     end
     A --&gt; B
     C --&gt;|发送二进制协议| D
-</code></pre>
+</pre>
 
 <p>ORM 的核心价值在于：
 - <strong>用面向对象编程（OOP）统一数据操作</strong>：开发者无需脱离 Python 语法上下文，直接实例化类、修改属性即可完成数据库变更。
@@ -741,27 +749,50 @@ backend/*.sqlite3
     <!-- Mermaid 图表引擎初始化 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            mermaid.initialize({ startOnLoad: false, theme: 'default' });
+        document.addEventListener("DOMContentLoaded", async function() {
+            mermaid.initialize({ 
+                startOnLoad: false, 
+                theme: 'default',
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+                securityLevel: 'loose'
+            });
             
-            // 兼容普通代码块以及丢失 language-mermaid 类名的情况 (CodeHilite 干扰)
+            // 兼容可能遗漏的普通代码块或类名情况
             const codeNodes = document.querySelectorAll('pre code, .highlight code');
             codeNodes.forEach(function(node) {
+                const isMermaidClass = node.classList.contains('language-mermaid') || 
+                                       (node.parentElement && node.parentElement.classList.contains('language-mermaid'));
                 const text = node.textContent.trim();
-                // 匹配常见的 mermaid 图表前缀
-                if (text.startsWith('graph ') || text.startsWith('sequenceDiagram') || text.startsWith('gantt') || text.startsWith('pie') || text.startsWith('classDiagram') || text.startsWith('stateDiagram') || text.startsWith('mindmap')) {
+                const isMermaidKeyword = /^(flowchart|graph|sequenceDiagram|gantt|pie|classDiagram|stateDiagram|mindmap|timeline|erDiagram|gitGraph)\b/.test(text);
+                
+                if (isMermaidClass || isMermaidKeyword) {
                     const tempDiv = document.createElement('div');
                     tempDiv.className = 'mermaid';
                     tempDiv.textContent = text;
-                    
-                    // 获取需要替换的最外层父节点 (比如 div.highlight 或者 pre)
-                    const wrapper = node.closest('.highlight') || node.parentNode;
-                    wrapper.replaceWith(tempDiv); 
+                    const wrapper = node.closest('.highlight') || node.closest('pre') || node.parentNode;
+                    wrapper.replaceWith(tempDiv);
                 }
             });
             
-            // 所有节点转换完成，统一进行图表动态绘制
-            mermaid.run();
+            // 逐个节点安全渲染，隔离异常，避免单个图表语法微瑕阻断后续所有图表
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const el = mermaidElements[i];
+                try {
+                    await mermaid.run({ nodes: [el] });
+                } catch (err) {
+                    console.warn("Mermaid 渲染单个图表失败:", err, el);
+                    el.style.border = "1px dashed #e11d48";
+                    el.style.padding = "12px";
+                    el.style.borderRadius = "8px";
+                    el.style.background = "#fff1f2";
+                    el.style.color = "#9f1239";
+                    el.style.fontSize = "13px";
+                    el.style.whiteSpace = "pre-wrap";
+                    el.style.fontFamily = "monospace";
+                    el.title = "图表语法渲染异常: " + (err.message || err);
+                }
+            }
         });
     </script>
     <!-- Lightbox：截图点击放大 -->

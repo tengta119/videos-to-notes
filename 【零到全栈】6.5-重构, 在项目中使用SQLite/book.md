@@ -378,15 +378,15 @@ backend/*.sqlite3
 
 ```mermaid
 flowchart LR
-    subgraph 开发者编写的面向对象代码
+    subgraph DevCode["开发者编写的面向对象代码"]
         A["class History(SQLModel, table=True):<br/>    id: int | None = Field(default=None, primary_key=True)<br/>    text: str<br/>    score: float"]
     end
-    subgraph ORM 框架层 (SQLModel / SQLAlchemy)
-        B[对象关系映射引擎]
+    subgraph ORMLayer["ORM 框架层 (SQLModel / SQLAlchemy)"]
+        B["对象关系映射引擎"]
         B -->|自动编译转换| C["SQL 语句生成器:<br/>INSERT INTO history ...<br/>SELECT * FROM history WHERE ..."]
     end
-    subgraph 底层数据库内核
-        D[(SQLite / PostgreSQL 存储引擎)]
+    subgraph DBLayer["底层数据库内核"]
+        D[("SQLite / PostgreSQL 存储引擎")]
     end
     A --> B
     C -->|发送二进制协议| D
